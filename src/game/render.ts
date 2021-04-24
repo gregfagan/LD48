@@ -1,24 +1,30 @@
 import { flow } from 'fp-ts/lib/function';
-import { Regl, Vec3, Vec4 } from 'regl';
+import { DefaultContext, Regl, Vec2, Vec3, Vec4 } from 'regl';
 import { toGLColor } from '../lib/gl/color';
 import { quad } from '../lib/gl/config/quad';
 import { sdf } from '../lib/gl/config/sdf';
-import { glsl } from '../lib/gl/regl';
+import { glsl, uniform } from '../lib/gl/regl';
+import { vec2 } from '../lib/math';
 import { Stream } from '../lib/stream';
-import { GameBoard, Grid, isTetronimo, Tetronimo } from './board';
+import {
+  GameBoard,
+  Grid,
+  height,
+  isTetronimo,
+  Tetronimo,
+  width,
+} from './board';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('colors');
-const textureWidth = 16;
-const textureHeight = 16;
 
-type RenderBoard = Grid<Vec4, typeof textureWidth, typeof textureHeight>;
+const textureSize: Vec2 = [16, 16];
+
+type RenderBoard = Grid<Vec4, typeof textureSize[0], typeof textureSize[1]>;
 
 const colorize = (board: GameBoard): RenderBoard =>
   board.map(row =>
-    row.map(cell =>
-      isTetronimo(cell) ? [...colors[cell]?.(), 1] : [0, 0, 0, 0]
-    )
+    row.map(cell => (isTetronimo(cell) ? [...colors[cell](), 1] : [0, 0, 0, 0]))
   ) as RenderBoard;
 
 const colors: Record<Tetronimo, Stream<Vec3>> = {
@@ -37,8 +43,8 @@ export const render = (regl: Regl) => {
     mag: 'nearest',
     format: 'rgba',
     type: 'float32',
-    width: textureWidth,
-    height: textureHeight,
+    shape: textureSize,
+    wrap: 'repeat',
   });
 
   const update = flow(colorize, data => texture.subimage(data));
@@ -46,18 +52,20 @@ export const render = (regl: Regl) => {
   const draw = glsl`
     ${quad}
     ${sdf}
+    ${{
+      uniforms: { board: texture },
+      depth: { enable: false },
+    }}
 
-    ${{ uniforms: { board: texture }, depth: { enable: false } }}
     uniform sampler2D board;
-
+  
     vec4 colorBoard() {
-      // texture is vertically flipped from the 2D array
-      vec2 p = st() * vec2(1., -1.) / 2. + 0.5;
-      return texture2D(board, p);
+      vec2 p = st() / 2. + 0.5;
+      return vec4(texture2D(board, p * vec2(1, -1)).xyz, 1.);
     }
 
     void main() {
-      gl_FragColor = vec4(colorBoard().xyz, 1.);
+      gl_FragColor = colorBoard();
     }
   `;
 
