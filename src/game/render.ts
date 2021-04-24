@@ -101,8 +101,8 @@ export const render = (regl: Regl) => {
       for (int i = (${numBoards} - 1); i >= 0 ; i--) {
         vec4 boardColor = colorBoard(i, boards[i]);
         float iWeight = 1. - (float(i) / float(${numBoards - 1}));
-        float stackColorRatio = ${uniform(gui.auto(0.3, 'stackOpacity', 0, 1))};
-        float stackOpacity = 1. - ((1. - iWeight) * stackColorRatio);
+        float stackFade = ${uniform(gui.auto(0.8, 'stackFade', 0, 1))};
+        float stackOpacity = 1. - ((1. - iWeight) * stackFade);
         color = mix(color, boardColor * stackOpacity, boardColor.w);
       }
       gl_FragColor = color;
