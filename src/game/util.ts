@@ -18,15 +18,22 @@ export const keys = keyboard(document);
 export const blit = (
   destinationArray: any[],
   sourceArray: any[],
-  origin = [0, 0]
+  origin = [0, 0],
+  value: any
 ) => {
   return destinationArray.map((row: any[], rowIndex: number) => {
     return row.map((column: any, colIndex: number) => {
-      return (
-        (sourceArray[rowIndex - origin[0]] &&
-          sourceArray[rowIndex - origin[0]][colIndex - origin[1]]) ||
-        column
-      );
+      const setValue =
+        sourceArray[rowIndex - origin[0]] &&
+        sourceArray[rowIndex - origin[0]][colIndex - origin[1]];
+
+      if (setValue) {
+        if (value !== undefined) {
+          return value;
+        }
+        return setValue;
+      }
+      return column;
     });
   });
 };

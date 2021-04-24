@@ -10,11 +10,13 @@ import {
   Up,
   Down,
   moveTetronimo,
+  stepStack,
 } from './state';
 
 let boardState = state;
 let playBoard = allStateToGameBoards(boardState);
-console.log(playBoard);
+let stepId = 0;
+
 export const draw = (regl: Regl) => {
   // create a board renderer
   const board = render(regl);
@@ -40,6 +42,11 @@ export const draw = (regl: Regl) => {
 
       if (key.w) {
         boardState = moveTetronimo(boardState, Up);
+      }
+
+      if (key.r) {
+        stepId++;
+        boardState = stepStack(boardState, stepId);
       }
     })
     .map(() => {
