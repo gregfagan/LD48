@@ -23,8 +23,7 @@ export const Down: Direction = [1, 0];
 
 type TetronimoState = {
   tetronimo: Tetronimo;
-  originRow: number;
-  originColumn: number;
+  position: [0, 0];
 };
 
 type State = {
@@ -35,8 +34,7 @@ export const state: State = {
   tetronimoes: [
     {
       tetronimo: T,
-      originRow: 0,
-      originColumn: 0,
+      position: [0, 0],
     },
   ],
 };
@@ -49,12 +47,11 @@ const drawTetronimo = (tetronimo: Tetronimo, row: number, column: number) => {
 export const addTetronimo = (
   board: GameBoard,
   tetronimo: Tetronimo,
-  rowIndex: number,
-  columnIndex: number
+  position: Direction
 ): GameBoard => {
   return board.map((row, rIdx) => {
-    const newRow = board[rowIndex].map((column, cIdx) => {
-      return drawTetronimo(tetronimo, rIdx - rowIndex, cIdx - columnIndex)
+    const newRow = board[position[0]].map((column, cIdx) => {
+      return drawTetronimo(tetronimo, rIdx - position[0], cIdx - position[1])
         ? tetronimo
         : column;
     });
@@ -66,20 +63,15 @@ export const addTetronimo = (
 export const stateToGameBoard = (state: State): GameBoard => {
   let newBoard: GameBoard = emptyGameBoard;
   state.tetronimoes.forEach(tetronimo => {
-    newBoard = addTetronimo(
-      newBoard,
-      tetronimo.tetronimo,
-      tetronimo.originRow,
-      tetronimo.originColumn
-    );
+    newBoard = addTetronimo(newBoard, tetronimo.tetronimo, tetronimo.position);
   });
   return newBoard;
 };
 
 export const moveTetronimo = (state: State, direction: Direction): State => {
   const newTetronimoes = state.tetronimoes.map(tetronimoState => {
-    const newOriginRow = tetronimoState.originRow + direction[0];
-    const newOriginColumn = tetronimoState.originColumn + direction[1];
+    const newOriginRow = tetronimoState.position[0] + direction[0];
+    const newOriginColumn = tetronimoState.position[1] + direction[1];
     const { width: tetronimoWidth, height: tetronimoHeight } = tetronimoSize(
       tetronimoState.tetronimo
     );
@@ -89,13 +81,15 @@ export const moveTetronimo = (state: State, direction: Direction): State => {
     const canMoveHorizontal =
       newOriginColumn >= 0 && newOriginColumn + tetronimoWidth <= width;
 
+    const newRow = canMoveVertical ? newOriginRow : tetronimoState.position[0];
+    const newColumn = canMoveHorizontal
+      ? newOriginColumn
+      : tetronimoState.position[1];
+
     return {
       ...tetronimoState,
-      originRow: canMoveVertical ? newOriginRow : tetronimoState.originRow,
-      originColumn: canMoveHorizontal
-        ? newOriginColumn
-        : tetronimoState.originColumn,
-    };
+      position: [newRow, newColumn],
+    } as TetronimoState;
   });
 
   return { ...state, tetronimoes: newTetronimoes };
