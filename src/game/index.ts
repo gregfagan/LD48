@@ -1,14 +1,16 @@
+import { Regl } from 'regl';
 import { quad } from '../lib/gl/config/quad';
 import { sdf } from '../lib/gl/config/sdf';
 import { glsl } from '../lib/gl/regl';
+import { board } from './render';
 
-export const draw = glsl`
+export const draw = (regl: Regl) =>
+  regl(glsl`
 ${quad}
 ${sdf}
+${board(regl)}
 
 void main() {
-  vec2 p = st();
-  vec3 color = vec3(0.);
-  gl_FragColor = vec4(color, 1.);
+  gl_FragColor = vec4(colorBoard().xyz, 1.);
 }
-`;
+`);
