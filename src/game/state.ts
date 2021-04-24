@@ -15,6 +15,8 @@ import {
 
 import { tetronimoShapes, tetronimoSize } from './tetronimoes';
 
+import { blit } from './util';
+
 type Direction = [-1 | 0 | 1, -1 | 0 | 1];
 export const Left: Direction = [0, -1];
 export const Right: Direction = [0, 1];
@@ -49,15 +51,7 @@ export const addTetronimo = (
   tetronimo: Tetronimo,
   position: Direction
 ): GameBoard => {
-  return board.map((row, rIdx) => {
-    const newRow = board[position[0]].map((column, cIdx) => {
-      return drawTetronimo(tetronimo, rIdx - position[0], cIdx - position[1])
-        ? tetronimo
-        : column;
-    });
-
-    return newRow;
-  }) as GameBoard;
+  return blit(board, tetronimoShapes[tetronimo], position) as GameBoard;
 };
 
 export const stateToGameBoard = (state: State): GameBoard => {

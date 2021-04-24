@@ -14,3 +14,19 @@ export const dt = delta(clock).map(dt => dt / 1000);
 
 // track input
 export const keys = keyboard(document);
+
+export const blit = (
+  destinationArray: any[],
+  sourceArray: any[],
+  origin = [0, 0]
+) => {
+  return destinationArray.map((row: any[], rowIndex: number) => {
+    return row.map((column: any, colIndex: number) => {
+      return (
+        (sourceArray[rowIndex - origin[0]] &&
+          sourceArray[rowIndex - origin[0]][colIndex - origin[1]]) ||
+        column
+      );
+    });
+  });
+};
