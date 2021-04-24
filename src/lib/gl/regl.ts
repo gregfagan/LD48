@@ -44,7 +44,7 @@ export function glsl(
 /** Convert template parameters to NamedConfigs */
 function asNamedConfig(param: GLSLTemplateParameter): NamedConfig {
   if (typeof param === 'number') {
-    return [param.toFixed(6), {}];
+    return [Number.isInteger(param) ? param.toString() : param.toFixed(6), {}];
   } else if (typeof param === 'string') {
     return [param, {}];
   } else if (typeof param === 'object' && !Array.isArray(param)) {

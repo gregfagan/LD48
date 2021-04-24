@@ -1,7 +1,5 @@
 import { Regl } from 'regl';
-import { glsl } from '../lib/gl/regl';
 import { stream } from '../lib/stream';
-import { example } from './board';
 import { render } from './render';
 import { clock, keys } from './util';
 import {
@@ -23,7 +21,7 @@ export const draw = (regl: Regl) => {
 
   // update the board when the clock ticks
   stream.on(() => {
-    board.update(playBoard[0]);
+    board.update(playBoard);
   }, clock);
 
   keys

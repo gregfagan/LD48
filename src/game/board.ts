@@ -21,7 +21,7 @@ export type Wall = 1;
 
 export type GameBoard = Grid<Tetronimo | Hole | Wall, Width, Height>;
 
-export const example: GameBoard = [
+export const example: ResizedGrid<GameBoard, 6, 5> = [
   [T, I, I, I, I, J],
   [T, T, 0, S, S, J],
   [T, Z, S, S, J, J],
