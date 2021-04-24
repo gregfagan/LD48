@@ -1,19 +1,11 @@
 import { flow } from 'fp-ts/lib/function';
-import { DefaultContext, Regl, Vec2, Vec3, Vec4 } from 'regl';
+import { Regl, Vec2, Vec3, Vec4 } from 'regl';
 import { toGLColor } from '../lib/gl/color';
 import { quad } from '../lib/gl/config/quad';
 import { sdf } from '../lib/gl/config/sdf';
-import { glsl, uniform } from '../lib/gl/regl';
-import { vec2 } from '../lib/math';
+import { glsl } from '../lib/gl/regl';
 import { Stream } from '../lib/stream';
-import {
-  GameBoard,
-  Grid,
-  height,
-  isTetronimo,
-  Tetronimo,
-  width,
-} from './board';
+import { GameBoard, Grid, isTetronimo, Tetronimo } from './board';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('colors');
@@ -57,11 +49,32 @@ export const render = (regl: Regl) => {
       depth: { enable: false },
     }}
 
+    float crop(vec2 p) {
+      vec2 crop = step(vec2(-1), p) * step(p, vec2(1));
+      float c = crop.x * crop.y;
+      return c;
+    }
+
     uniform sampler2D board;
   
     vec4 colorBoard() {
-      vec2 p = st() / 2. + 0.5;
-      return vec4(texture2D(board, p * vec2(1, -1)).xyz, 1.);
+      float scale = 1.5;
+      vec2 p = st();
+
+      p *= scale;
+      float alpha = crop(p);
+
+      float d = sdBox(p,  vec2(1., 1));
+      d = abs(d);
+      d = aastep(d, 0.01);
+      vec4 outline = vec4(d * vec3(1), d);
+
+      p = p / 2. + 0.5; 
+      p = p * vec2(1, -1);
+      vec4 board = texture2D(board, p); 
+
+      vec4 color = mix(vec4(board.xyz, board.w * alpha), outline, d);
+      return color;
     }
 
     void main() {
