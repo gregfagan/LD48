@@ -3,6 +3,9 @@ export const I = 'I', J = 'J', L = 'L', O = 'O', S = 'S', T = 'T', Z = 'Z';
 export const tetronimoes = [I, J, L, O, S, T, Z] as const;
 export type Tetronimo = typeof tetronimoes[number];
 
+export const EMPTY_BOARD = 0;
+export const FULL_BOARD = 1;
+
 export const isTetronimo = (t: any): t is Tetronimo =>
   tetronimoes.indexOf(t) > -1;
 
