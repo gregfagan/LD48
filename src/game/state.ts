@@ -1,6 +1,7 @@
 import {
   GameBoard,
   emptyGameBoard,
+  fullGameBoard,
   Tetronimo,
   I,
   J,
@@ -47,12 +48,15 @@ export const state: State = {
       },
     ],
   },
-  boards: [],
+  boards: [{ tetronimoes: [] }, { tetronimoes: [] }, { tetronimoes: [] }],
 };
 
-export const stateToGameBoard = (state: State): GameBoard => {
-  let newBoard: GameBoard = emptyGameBoard;
-  state.primaryBoard.tetronimoes.forEach(tetronimo => {
+export const stateToGameBoard = (
+  boardState: BoardState,
+  boardType: number = 0
+): GameBoard => {
+  let newBoard: GameBoard = boardType === 0 ? emptyGameBoard : fullGameBoard;
+  boardState.tetronimoes.forEach(tetronimo => {
     newBoard = blit(
       newBoard,
       tetronimoShapes[tetronimo.tetronimo],
@@ -60,6 +64,19 @@ export const stateToGameBoard = (state: State): GameBoard => {
     ) as GameBoard;
   });
   return newBoard;
+};
+
+export const allStateToGameBoards = (state: State): GameBoard[] => {
+  const gameBoards: GameBoard[] = [];
+
+  gameBoards.push(stateToGameBoard(state.primaryBoard));
+  state.boards.forEach((boardState, index) =>
+    gameBoards.push(
+      stateToGameBoard(boardState, index === state.boards.length - 1 ? 1 : 0)
+    )
+  );
+
+  return gameBoards;
 };
 
 export const moveTetronimo = (state: State, direction: Direction): State => {

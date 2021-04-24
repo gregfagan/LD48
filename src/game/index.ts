@@ -6,7 +6,7 @@ import { render } from './render';
 import { clock, keys } from './util';
 import {
   state,
-  stateToGameBoard,
+  allStateToGameBoards,
   Left,
   Right,
   Up,
@@ -15,15 +15,15 @@ import {
 } from './state';
 
 let boardState = state;
-let playBoard = stateToGameBoard(boardState);
-
+let playBoard = allStateToGameBoards(boardState);
+console.log(playBoard);
 export const draw = (regl: Regl) => {
   // create a board renderer
   const board = render(regl);
 
   // update the board when the clock ticks
   stream.on(() => {
-    board.update(playBoard);
+    board.update(playBoard[0]);
   }, clock);
 
   keys
@@ -45,7 +45,7 @@ export const draw = (regl: Regl) => {
       }
     })
     .map(() => {
-      playBoard = stateToGameBoard(boardState);
+      playBoard = allStateToGameBoards(boardState);
     });
 
   // return the draw command

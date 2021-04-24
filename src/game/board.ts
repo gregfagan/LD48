@@ -8,8 +8,10 @@ export const isTetronimo = (t: any): t is Tetronimo =>
 
 export const width = 16;
 export const height = 16;
+export const stackSize = 3;
 export type Width = typeof width;
 export type Height = typeof height;
+export type StackSize = typeof stackSize;
 
 export type Hole = 0;
 export type Wall = 1;
@@ -26,6 +28,10 @@ export const example: GameBoard = [
 
 export const emptyGameBoard: GameBoard = new Array(height).fill(
   new Array(width).fill(0)
+) as GameBoard;
+
+export const fullGameBoard: GameBoard = new Array(height).fill(
+  new Array(width).fill(1)
 ) as GameBoard;
 
 //
