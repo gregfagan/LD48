@@ -6,8 +6,8 @@ export type Tetronimo = typeof tetronimoes[number];
 export const isTetronimo = (t: any): t is Tetronimo =>
   tetronimoes.indexOf(t) > -1;
 
-export const width = 6;
-export const height = 5;
+export const width = 16;
+export const height = 16;
 export type Width = typeof width;
 export type Height = typeof height;
 
@@ -23,6 +23,10 @@ export const example: GameBoard = [
   [Z, Z, 0, L, O, O],
   [Z, L, L, L, O, O],
 ];
+
+export const emptyGameBoard: GameBoard = new Array(height).fill(
+  new Array(width).fill(0)
+) as GameBoard;
 
 //
 // Utility types for constructing boards

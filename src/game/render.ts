@@ -9,8 +9,8 @@ import { GameBoard, Grid, isTetronimo, Tetronimo } from './board';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('colors');
-const textureWidth = 8;
-const textureHeight = 8;
+const textureWidth = 16;
+const textureHeight = 16;
 
 type RenderBoard = Grid<Vec4, typeof textureWidth, typeof textureHeight>;
 
