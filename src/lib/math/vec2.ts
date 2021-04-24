@@ -47,3 +47,15 @@ export const sqrLen = vec2.sqrLen;
 export const map = (f: (v: number) => number) => (v: vec2) => v.map(f) as vec2;
 export const clampLength = (max: number) => (v: vec2) =>
   len(v) > max ? scale(normalize(v), max) : v;
+
+export const clampDimensions = (
+  height: number,
+  width: number,
+  position: [number, number]
+) => {
+  const [row, column] = position;
+  const newRow = row < 0 ? 0 : row > height ? height : row;
+  const newColumn = column < 0 ? 0 : column > width ? width : column;
+
+  return [newRow, newColumn];
+};
