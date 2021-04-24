@@ -14,8 +14,6 @@ export type KeyMap = Record<KeyboardEvent['key'], boolean>;
 export const keyboard = (el: EventTarget): Stream<KeyMap> =>
   stream.scan(
     (current, next: KeyboardEvent) => {
-      next.preventDefault();
-      next.stopPropagation();
       current[next.key] = next.type === 'keydown';
       return current;
     },

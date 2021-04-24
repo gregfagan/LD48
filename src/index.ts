@@ -1,21 +1,18 @@
 import REGL from 'regl';
 import Stats from 'stats.js';
 import { stream } from './lib/stream';
-import { clock, gui } from './game/util';
+import { clock } from './game/util';
 import { draw as game } from './game';
-import { createRenderScale } from './lib/gl/renderScale';
 
 const regl = REGL();
 const stats = new Stats();
 stats.showPanel(0);
 document.body.appendChild(stats.dom);
 
-const renderer = createRenderScale(regl, gui, game);
+const render = regl(game);
 
 stream.on(() => {
   regl.poll();
-
-  renderer()();
-
+  render();
   stats.update();
 }, clock);
