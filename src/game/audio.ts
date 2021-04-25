@@ -1,6 +1,7 @@
 import { dt, gui as baseGui, pause } from './util';
 import * as Tone from 'tone';
 import { stream } from '../lib/stream';
+import { times } from 'ramda';
 
 const gui = baseGui.addFolder('audio');
 
@@ -25,10 +26,13 @@ export const start = async () => {
   return Tone.start();
 };
 
-const synth = new Tone.MembraneSynth().toDestination();
+const reverb = new Tone.Reverb(0.8).toDestination();
+new Tone.Signal(0.5).connect(reverb.wet);
+const distortion = new Tone.Distortion(1.2).toDestination();
+const drumSynth = new Tone.MembraneSynth().connect(distortion);
 const drumLoop = new Tone.Part(
   (time, note) => {
-    synth.triggerAttackRelease(note, '4n');
+    drumSynth.triggerAttackRelease(note, '4n');
   },
   [
     [0, 'A1'],
@@ -45,3 +49,60 @@ const drumLoop = new Tone.Part(
 drumLoop.loop = true;
 drumLoop.loopEnd = '2m';
 drumLoop.start(0);
+
+const arpDelay = new Tone.PingPongDelay('16n').toDestination();
+const delayLFO = new Tone.LFO('3m').connect(arpDelay.wet);
+const arp = new Tone.MonoSynth().connect(arpDelay);
+const arpPattern = new Tone.Pattern(
+  (time, note) => {
+    arp.triggerAttackRelease(note, '8n');
+  },
+  [
+    'E3',
+    'Gb3',
+    'A4',
+    'Gb4',
+    'A4',
+    'Gb3',
+    'B4',
+    'B3',
+    'E3',
+    'Gb3',
+    'A4',
+    'Gb4',
+    'A4',
+    'Gb3',
+    'B4',
+    'B3',
+    'E3',
+    'G#3',
+    'B4',
+    'G#4',
+    'B4',
+    'E3',
+    'Db4',
+    'B3',
+    'E3',
+    'Gb3',
+    'A4',
+    'Gb4',
+    'A4',
+    'B4',
+    'E3',
+    'Db4',
+  ],
+  'up'
+);
+arpPattern.playbackRate = 2;
+arpPattern.start(0);
+
+const bass = new Tone.MonoSynth().connect(distortion);
+const bassPattern = new Tone.Pattern(
+  (time, note) => {
+    bass.triggerAttackRelease(note, '2n');
+  },
+  ['E2', 'Gb1', 'A2', 'Gb2'],
+  'upDown'
+);
+bassPattern.playbackRate = 0.5;
+bassPattern.start(0);
