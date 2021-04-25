@@ -11,7 +11,7 @@ export const isTetronimo = (t: any): t is Tetronimo =>
 
 export const width = 16;
 export const height = 16;
-export const stackSize = 3;
+export const stackSize = 8;
 export type Width = typeof width;
 export type Height = typeof height;
 export type StackSize = typeof stackSize;

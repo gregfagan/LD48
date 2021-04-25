@@ -25,6 +25,7 @@ import {
 
 import { blit } from './util';
 import { add, clampDimensions } from '../lib/math/vec2';
+import { range } from 'fp-ts/lib/ReadonlyArray';
 
 type Direction = [-1 | 0 | 1, -1 | 0 | 1];
 export const Left: Direction = [0, -1];
@@ -62,8 +63,13 @@ export const state: State = {
     boardType: EMPTY_BOARD,
   },
   stack: [
-    { tetronimoes: [], holes: [], walls: [], boardType: EMPTY_BOARD },
-    { tetronimoes: [], holes: [], walls: [], boardType: EMPTY_BOARD },
+    ...range(0, stackSize - 2).map(() => ({
+      tetronimoes: [],
+      holes: [],
+      walls: [],
+      boardType: EMPTY_BOARD,
+    })),
+
     {
       tetronimoes: [],
       holes: [
