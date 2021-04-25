@@ -6,6 +6,11 @@ const gui = baseGui.addFolder('audio');
 
 export const BPM = gui.auto(120, 'BPM', 60, 240);
 
+export const currentBeat = stream.of(0);
+Tone.Transport.scheduleRepeat(() => {
+  currentBeat(currentBeat() + 1);
+}, '4n');
+
 stream.on(bpm => (Tone.Transport.bpm.value = bpm), BPM);
 
 stream.on(pauseState => {

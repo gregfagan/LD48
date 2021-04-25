@@ -23,6 +23,8 @@ import {
   randomTetronimoPosition,
 } from './tetronimoes';
 
+import { currentBeat } from './audio';
+
 import { blit } from './util';
 import { add, clampDimensions } from '../lib/math/vec2';
 import { range } from 'fp-ts/lib/ReadonlyArray';
@@ -75,8 +77,6 @@ const initialState: State = {
   ],
 };
 
-export const state = stream.of(initialState);
-
 const tmpGenerateEmptyBoard = (): BoardState => {
   return { tetronimoes: [], holes: [], walls: [], boardType: EMPTY_BOARD };
 };
@@ -123,6 +123,8 @@ export const stepStack = (state: State, stepId: number): State => {
     stack: newStack,
   };
 };
+
+export const state = stream.scan(stepStack, initialState, currentBeat);
 
 export const stateToGameBoard = (boardState: BoardState): GameBoard => {
   let newBoard: GameBoard =

@@ -14,12 +14,6 @@ import {
 
 export { render } from './render';
 
-let currentBeat = 0;
-Tone.Transport.scheduleRepeat(() => {
-  state(stepStack(state(), currentBeat));
-  currentBeat += 1;
-}, '4n');
-
 // initial state
 let toneStarted = false;
 
