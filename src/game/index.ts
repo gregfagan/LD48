@@ -13,9 +13,11 @@ import {
   stepStack,
 } from './state';
 
+// Beats to count in
+const countIn = 1;
+let stepId = 0 - countIn;
 let boardState = state;
 let playBoard = allStateToGameBoards(boardState);
-let stepId = 0;
 
 export const draw = (regl: Regl) => {
   // create a board renderer

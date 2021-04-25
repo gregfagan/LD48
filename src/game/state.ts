@@ -63,24 +63,13 @@ export const state: State = {
     boardType: EMPTY_BOARD,
   },
   stack: [
-    ...range(0, stackSize - 2).map(() => ({
+    // empty starting stack
+    ...range(0, stackSize - 1).map(() => ({
       tetronimoes: [],
       holes: [],
       walls: [],
       boardType: EMPTY_BOARD,
     })),
-
-    {
-      tetronimoes: [],
-      holes: [
-        {
-          tetronimo: T,
-          position: [3, 2],
-        },
-      ],
-      walls: [],
-      boardType: FULL_BOARD,
-    },
   ],
 };
 
@@ -120,7 +109,7 @@ export const stepStack = (state: State, stepId: number): State => {
 
   const newStack = [
     ...state.stack.slice(1),
-    stepId % (stackSize + 1) === 0
+    stepId % 8 === 0
       ? tmpGenerateHoleBoard(newPlayerBoard.tetronimoes)
       : tmpGenerateEmptyBoard(),
   ];
