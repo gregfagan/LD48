@@ -9,6 +9,7 @@ import {
   Up,
   Down,
   moveTetronimo,
+  rotateTetronimo,
   stepStack,
 } from './state';
 
@@ -29,6 +30,8 @@ keys.map(key => {
   if (key.s) state(moveTetronimo(state(), Down));
   if (key.d) state(moveTetronimo(state(), Right));
   if (key.w) state(moveTetronimo(state(), Up));
+  if (key.e) state(rotateTetronimo(state(), 1));
+  if (key.q) state(rotateTetronimo(state(), -1));
   if (key[' ']) {
     if (!toneStarted) {
       start();

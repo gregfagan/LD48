@@ -54,12 +54,22 @@ const constantLength = (shapes: Shape[]) => {
     : shapes.slice(0, numShapesToRender);
 };
 
+const rotations = [
+  [1, 0, 0, 1],
+  [0, -1, 1, 0],
+  [-1, 0, 0, -1],
+  [0, 1, -1, 0],
+];
+
 const u = state
   .map(s => {
     const shapes = takeLeft(8)(s.tetronimoes).map(
       (shape): Shape => {
         const blocks = tetronimoShapes[shape.tetronimo].map(v =>
-          vec2.add(v, shape.position)
+          vec2.add(
+            vec2.transformMat2(v, rotations[shape.rotation]),
+            shape.position
+          )
         ) as TetronimoVertexes;
         const isHole = shape.type === 'hole';
         const color: Vec3 = isHole ? [1, 1, 1] : colors[shape.tetronimo]();

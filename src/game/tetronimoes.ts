@@ -46,7 +46,9 @@ export const randomTetronimoPosition = (tetronimoId: Tetronimo): Vec2 => {
 export const blitTetronimo = (tetronimoState, gameBoard) => {
   const origin = tetronimoState.position;
   const shape = tetronimoShapes[tetronimoState.tetronimo];
-  const translatedShape = shape.map((position: Vec2) =>
+  const rotatedShape = vec2.transformMat2(shape, [0, -1, 1, 0]);
+  console.log({ shape, rotatedShape });
+  const translatedShape = rotatedShape.map((position: Vec2) =>
     vec2.add(position, origin)
   );
   const newBoard = gameBoard.map((row, y) =>

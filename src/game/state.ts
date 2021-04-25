@@ -29,6 +29,7 @@ import { vec2 } from '../lib/math';
 import { add } from '../lib/math/vec2';
 import { Vec2 } from 'regl';
 import { stream } from '../lib/stream';
+import { sample } from './util';
 
 export const Left: Vec2 = vec2.of(-1, 0);
 export const Right: Vec2 = vec2.of(1, 0);
@@ -85,7 +86,7 @@ export const stepStack = (state: State, stepId: number): State => {
       tetronimo: tmpTetronimo,
       position: randomTetronimoPosition(tmpTetronimo),
       type: 'hole',
-      rotation: 0,
+      rotation: sample([0, 1, 2, 3]),
       beat: stepId + 7,
     });
   }
@@ -97,6 +98,20 @@ export const stepStack = (state: State, stepId: number): State => {
 };
 
 export const state = stream.of(initialState);
+
+export const rotateTetronimo = (state: State, direction: number): State => {
+  const newTetronimoes = state.tetronimoes.map(tetronimoState => {
+    if (tetronimoState.type === 'player') {
+      const newRotation = tetronimoState.rotation + direction;
+      return {
+        ...tetronimoState,
+        rotation: newRotation > 3 ? 0 : newRotation < 0 ? 3 : newRotation,
+      } as TetronimoState;
+    }
+    return tetronimoState;
+  });
+  return { ...state, tetronimoes: newTetronimoes };
+};
 
 export const moveTetronimo = (state: State, direction: Vec2): State => {
   const newTetronimoes = state.tetronimoes.map(tetronimoState => {
