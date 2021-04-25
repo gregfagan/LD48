@@ -1,6 +1,7 @@
-import { stream } from '../lib/stream';
+import * as Tone from 'tone';
+
 import { keys, pause } from './util';
-import { start, beat } from './audio';
+import { start } from './audio';
 import {
   state,
   Left,
@@ -13,11 +14,14 @@ import {
 
 export { render } from './render';
 
+let currentBeat = 0;
+Tone.Transport.scheduleRepeat(() => {
+  state(stepStack(state(), currentBeat));
+  currentBeat += 1;
+}, '4n');
+
 // initial state
 let toneStarted = false;
-
-// update on beat
-stream.on(currentBeat => state(stepStack(state(), currentBeat)), beat);
 
 // respond to input
 keys.map(key => {
