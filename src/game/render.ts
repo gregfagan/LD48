@@ -5,7 +5,7 @@ import { toGLColor } from '../lib/gl/color';
 import { quad } from '../lib/gl/config/quad';
 import { sdf } from '../lib/gl/config/sdf';
 import { glsl, uniform } from '../lib/gl/regl';
-import { log, Stream } from '../lib/stream';
+import { Stream } from '../lib/stream';
 import { GameBoard, Grid, isTetronimo, stackSize, Tetronimo } from './board';
 import { gui as baseGui } from './util';
 
@@ -85,12 +85,15 @@ export const render = (regl: Regl) => {
 
       float d = sdBox(p,  vec2(1., 1));
       d = abs(d);
-      d = aastep(d, 0.01);
+      d = step(d, 0.01);
       vec4 outline = vec4(d * vec3(1), d);
 
       p = p / 2. + 0.5; 
       p = p * vec2(1, -1);
-      vec4 board = texture2D(tex, p); 
+      vec4 board = texture2D(tex, p);
+
+      float shadow = texture2D(boards[0], p).w * 0.2;
+      if (i != 0) board.xyz *= (1. - shadow);
 
       vec4 color = mix(vec4(board.xyz, board.w * alpha), outline, d);
       return color;
