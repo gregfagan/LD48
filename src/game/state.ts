@@ -18,17 +18,15 @@ import {
 } from './board';
 
 import {
-  tetronimoShapes,
   randomTetronimoPosition,
   blitTetronimo,
+  tetronimoPosition,
 } from './tetronimoes';
 
 import { currentBeat } from './audio';
 import * as vec2 from '../lib/math/vec2';
 
-import { blit } from './util';
-import { add, clampDimensions } from '../lib/math/vec2';
-import { range } from 'fp-ts/lib/ReadonlyArray';
+import { add } from '../lib/math/vec2';
 import { Vec2 } from 'regl';
 import { stream } from '../lib/stream';
 
@@ -45,33 +43,21 @@ type TetronimoState = {
   beat: number;
 };
 
-type BoardState = {
-  tetronimoes: TetronimoState[];
-  holes: TetronimoState[];
-  walls: TetronimoState[];
-  boardType: number;
-};
-
 type State = {
   tetronimoes: TetronimoState[];
   currentBeat: number;
 };
 
+const tmpTetronimo = Z;
+
 const initialState: State = {
   tetronimoes: [
     {
-      tetronimo: T,
-      position: randomTetronimoPosition(T),
+      tetronimo: tmpTetronimo,
+      position: randomTetronimoPosition(tmpTetronimo),
       type: 'player',
       rotation: 0,
       beat: currentBeat(),
-    },
-    {
-      tetronimo: T,
-      position: randomTetronimoPosition(T),
-      type: 'hole',
-      rotation: 0,
-      beat: currentBeat() + 7,
     },
   ],
   currentBeat: currentBeat(),
@@ -96,8 +82,8 @@ export const stepStack = (state: State, stepId: number): State => {
 
   if (stepId % 8 === 0) {
     newTetronimos.push({
-      tetronimo: T,
-      position: randomTetronimoPosition(T),
+      tetronimo: tmpTetronimo,
+      position: randomTetronimoPosition(tmpTetronimo),
       type: 'hole',
       rotation: 0,
       beat: stepId + 7,
@@ -116,6 +102,16 @@ export const moveTetronimo = (state: State, direction: Vec2): State => {
   const newTetronimoes = state.tetronimoes.map(tetronimoState => {
     if (tetronimoState.type === 'player') {
       const newPosition = add(tetronimoState.position, direction);
+      const newShape = tetronimoPosition(tetronimoState.tetronimo, newPosition);
+
+      newPosition[0] = newShape.some(([x]) => x < 0 || x >= width)
+        ? tetronimoState.position[0]
+        : newPosition[0];
+
+      newPosition[1] = newShape.some(([, y]) => y < 0 || y >= height)
+        ? tetronimoState.position[1]
+        : newPosition[1];
+
       return {
         ...tetronimoState,
         position: newPosition,

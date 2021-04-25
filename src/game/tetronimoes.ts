@@ -17,44 +17,26 @@ import * as vec2 from '../lib/math/vec2';
 export const tetronimoShapes = {
   I: [vec2.of(-1, 0), vec2.of(0, 0), vec2.of(1, 0), vec2.of(2, 0)],
   T: [vec2.of(-1, 0), vec2.of(0, 0), vec2.of(1, 0), vec2.of(0, 1)],
-  J: [vec2.of(0, 1), vec2.of(0, 0), vec2.of(-1, -1), vec2.of(0, -1)],
-  L: [vec2.of(1, 0), vec2.of(0, 0), vec2.of(0, -1), vec2.of(1, -1)],
+  J: [vec2.of(0, -1), vec2.of(0, 0), vec2.of(0, 1), vec2.of(-1, 1)],
+  L: [vec2.of(0, -1), vec2.of(0, 0), vec2.of(0, 1), vec2.of(1, 1)],
   O: [vec2.of(0, 0), vec2.of(1, 0), vec2.of(0, 1), vec2.of(1, 1)],
+  S: [vec2.of(0, 0), vec2.of(1, 0), vec2.of(-1, 1), vec2.of(0, 1)],
+  Z: [vec2.of(-1, 0), vec2.of(0, 0), vec2.of(0, 1), vec2.of(1, 1)],
 };
 
-export const tetronimoBounds = (tetronimoId: Tetronimo) => {
+export const tetronimoPosition = (
+  tetronimoId: Tetronimo,
+  origin: Vec2
+): Vec2[] => {
   const shape = tetronimoShapes[tetronimoId];
-  const left: number = shape.reduce(
-    (acc: number, position: Vec2) =>
-      position[0] < 0 ? acc + position[0] : acc,
-    0
-  );
-  const right: number = shape.reduce(
-    (acc: number, position: Vec2) =>
-      position[0] > 0 ? acc + position[0] : acc,
-    0
-  );
-  const top: number = shape.reduce(
-    (acc: number, position: Vec2) =>
-      position[1] < 0 ? acc + position[1] : acc,
-    0
-  );
-  const bottom: number = shape.reduce(
-    (acc: number, position: Vec2) =>
-      position[1] > 0 ? acc + position[1] : acc,
-    0
-  );
-
-  return { left, right, top, bottom };
+  return shape.map((position: Vec2) => vec2.add(origin, position));
 };
 
 export const randomTetronimoPosition = (tetronimoId: Tetronimo): Vec2 => {
-  const { left, right, top, bottom } = tetronimoBounds(tetronimoId);
-
-  const minRow = 0 - top;
-  const maxRow = height - bottom;
-  const minColumn = 0 - left;
-  const maxColumn = width - right;
+  const minRow = 2;
+  const maxRow = height - 2;
+  const minColumn = 2;
+  const maxColumn = width - 2;
   const row = Math.floor(Math.random() * maxRow) + minRow;
   const col = Math.floor(Math.random() * maxColumn) + minColumn;
 
