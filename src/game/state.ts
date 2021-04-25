@@ -27,6 +27,7 @@ import { blit } from './util';
 import { add, clampDimensions } from '../lib/math/vec2';
 import { range } from 'fp-ts/lib/ReadonlyArray';
 import { Vec2 } from 'regl';
+import { stream } from '../lib/stream';
 
 type Direction = [-1 | 0 | 1, -1 | 0 | 1];
 export const Left: Direction = [0, -1];
@@ -51,7 +52,7 @@ type State = {
   stack: BoardState[];
 };
 
-export const state: State = {
+const initialState: State = {
   playerBoard: {
     tetronimoes: [
       {
@@ -73,6 +74,8 @@ export const state: State = {
     })),
   ],
 };
+
+export const state = stream.of(initialState);
 
 const tmpGenerateEmptyBoard = (): BoardState => {
   return { tetronimoes: [], holes: [], walls: [], boardType: EMPTY_BOARD };

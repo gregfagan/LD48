@@ -7,9 +7,12 @@ import { sdf } from '../lib/gl/config/sdf';
 import { glsl, uniform } from '../lib/gl/regl';
 import { stream, Stream } from '../lib/stream';
 import { GameBoard, Grid, isTetronimo, stackSize, Tetronimo } from './board';
+import { allStateToGameBoards, state } from './state';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('graphics');
+
+const playBoard = state.map(allStateToGameBoards);
 
 const textureSize: Vec2 = [16, 16];
 const numBoards = stackSize + 1;
@@ -53,6 +56,8 @@ export const render = (regl: Regl) => {
     (boards: GameBoard[]) => boards.map(colorize),
     data => data.map((board, index) => textures[index].subimage(board))
   );
+
+  stream.on(update, playBoard);
 
   const draw = glsl`
     ${quad}
@@ -113,5 +118,5 @@ export const render = (regl: Regl) => {
     }
   `;
 
-  return { update, draw };
+  return regl(draw);
 };

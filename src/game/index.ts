@@ -1,11 +1,8 @@
-import { Regl } from 'regl';
 import { stream } from '../lib/stream';
-import { render } from './render';
-import { clock, keys, pause } from './util';
+import { keys, pause } from './util';
 import { start, beat } from './audio';
 import {
   state,
-  allStateToGameBoards,
   Left,
   Right,
   Up,
@@ -14,56 +11,25 @@ import {
   stepStack,
 } from './state';
 
+export { render } from './render';
+
+// initial state
 let toneStarted = false;
 
-// Beats to count in
-let boardState = state;
-let playBoard = allStateToGameBoards(boardState);
+// update on beat
+stream.on(currentBeat => state(stepStack(state(), currentBeat)), beat);
 
-export const draw = (regl: Regl) => {
-  // create a board renderer
-  const board = render(regl);
-
-  // update the board when the clock ticks
-  stream.on(() => {
-    board.update(playBoard);
-  }, clock);
-
-  stream.on(currentBeat => {
-    boardState = stepStack(boardState, currentBeat);
-    playBoard = allStateToGameBoards(boardState);
-  }, beat);
-
-  keys
-    .map(key => {
-      if (key.a) {
-        boardState = moveTetronimo(boardState, Left);
-      }
-
-      if (key.s) {
-        boardState = moveTetronimo(boardState, Down);
-      }
-
-      if (key.d) {
-        boardState = moveTetronimo(boardState, Right);
-      }
-
-      if (key.w) {
-        boardState = moveTetronimo(boardState, Up);
-      }
-
-      if (key[' ']) {
-        if (!toneStarted) {
-          start();
-          toneStarted = true;
-        }
-        pause(!pause());
-      }
-    })
-    .map(() => {
-      playBoard = allStateToGameBoards(boardState);
-    });
-
-  // return the draw command
-  return regl(board.draw);
-};
+// respond to input
+keys.map(key => {
+  if (key.a) state(moveTetronimo(state(), Left));
+  if (key.s) state(moveTetronimo(state(), Down));
+  if (key.d) state(moveTetronimo(state(), Right));
+  if (key.w) state(moveTetronimo(state(), Up));
+  if (key[' ']) {
+    if (!toneStarted) {
+      start();
+      toneStarted = true;
+    }
+    pause(!pause());
+  }
+});
