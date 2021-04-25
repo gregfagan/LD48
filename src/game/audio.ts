@@ -25,10 +25,23 @@ export const start = async () => {
   return Tone.start();
 };
 
-const synth = new Tone.Synth().toDestination();
-const loop = new Tone.Pattern(
+const synth = new Tone.MembraneSynth().toDestination();
+const drumLoop = new Tone.Part(
   (time, note) => {
     synth.triggerAttackRelease(note, '4n');
   },
-  ['C5', 'C4', 'C4', 'C4', 'C4', 'C4', 'B3', 'G#3']
-).start(0);
+  [
+    [0, 'A1'],
+    ['0:1:0', 'C1'],
+    ['0:2:0', 'C1'],
+    ['0:3:0', 'C1'],
+    ['1:0:0', 'C1'],
+    ['1:1:0', 'C1'],
+    ['1:2:0', 'C1'],
+    ['1:3:0', 'C1'],
+  ]
+);
+
+drumLoop.loop = true;
+drumLoop.loopEnd = '2m';
+drumLoop.start(0);
