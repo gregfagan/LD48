@@ -11,7 +11,7 @@ export function fromGLColor([r, g, b]: REGL.Vec3) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-export const isColor = (guiColor: any): boolean =>
+export const isColor = (guiColor: any): guiColor is string =>
   typeof guiColor === 'string' && colorRegex.test(guiColor);
 
 export function toGLColor(guiColor: string): REGL.Vec3 {

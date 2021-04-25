@@ -26,6 +26,7 @@ import {
 import { blit } from './util';
 import { add, clampDimensions } from '../lib/math/vec2';
 import { range } from 'fp-ts/lib/ReadonlyArray';
+import { Vec2 } from 'regl';
 
 type Direction = [-1 | 0 | 1, -1 | 0 | 1];
 export const Left: Direction = [0, -1];
@@ -35,7 +36,7 @@ export const Down: Direction = [1, 0];
 
 type TetronimoState = {
   tetronimo: Tetronimo;
-  position: [number, number];
+  position: Vec2;
 };
 
 type BoardState = {

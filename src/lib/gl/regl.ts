@@ -101,7 +101,9 @@ export function uniform<T extends keyof Value>(
     : isType(nameOrType)
     ? generateName()
     : nameOrType;
-  const getValue = isColor(value()) ? () => toGLColor(value()) : () => value();
+  const getValue = isColor(value())
+    ? () => toGLColor(value() as string)
+    : () => value();
   const finalType =
     type ?? (isType(nameOrType) ? nameOrType : inferType(getValue()));
   return [

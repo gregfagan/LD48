@@ -5,12 +5,11 @@ import { toGLColor } from '../lib/gl/color';
 import { quad } from '../lib/gl/config/quad';
 import { sdf } from '../lib/gl/config/sdf';
 import { glsl, uniform } from '../lib/gl/regl';
-import { Stream } from '../lib/stream';
+import { stream, Stream } from '../lib/stream';
 import { GameBoard, Grid, isTetronimo, stackSize, Tetronimo } from './board';
 import { gui as baseGui } from './util';
 
-const colorGUI = baseGui.addFolder('colors');
-const gui = baseGui;
+const gui = baseGui.addFolder('graphics');
 
 const textureSize: Vec2 = [16, 16];
 const numBoards = stackSize + 1;
@@ -29,13 +28,13 @@ const colorize = (board: GameBoard): RenderBoard =>
   ) as RenderBoard;
 
 const colors: Record<Tetronimo, Stream<Vec3>> = {
-  I: colorGUI.auto('#ff9b0d', 'I').map(toGLColor),
-  J: colorGUI.auto('#497bff', 'J').map(toGLColor),
-  L: colorGUI.auto('#ff5d5d', 'L').map(toGLColor),
-  O: colorGUI.auto('#00f0ff', 'O').map(toGLColor),
-  S: colorGUI.auto('#00ff86', 'S').map(toGLColor),
-  T: colorGUI.auto('#ff74d1', 'T').map(toGLColor),
-  Z: colorGUI.auto('#fffb51', 'Z').map(toGLColor),
+  I: gui.auto('#ff9b0d', 'I').map(toGLColor),
+  J: gui.auto('#497bff', 'J').map(toGLColor),
+  L: gui.auto('#ff5d5d', 'L').map(toGLColor),
+  O: gui.auto('#00f0ff', 'O').map(toGLColor),
+  S: gui.auto('#00ff86', 'S').map(toGLColor),
+  T: gui.auto('#ff74d1', 'T').map(toGLColor),
+  Z: gui.auto('#fffb51', 'Z').map(toGLColor),
 };
 
 export const render = (regl: Regl) => {
@@ -106,7 +105,9 @@ export const render = (regl: Regl) => {
         float iWeight = 1. - (float(i) / float(${numBoards - 1}));
         float stackFade = ${uniform(gui.auto(0.8, 'stackFade', 0, 1))};
         float stackOpacity = 1. - ((1. - iWeight) * stackFade);
-        color = mix(color, boardColor * stackOpacity, boardColor.w);
+        boardColor = vec4(boardColor.xyz * stackOpacity, boardColor.w);
+
+        color = mix(color, boardColor, boardColor.w);
       }
       gl_FragColor = color;
     }
