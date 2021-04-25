@@ -1,4 +1,4 @@
-import { dt, gui as baseGui } from './util';
+import { dt, gui as baseGui, pause } from './util';
 import * as Tone from 'tone';
 import { stream } from '../lib/stream';
 import { dropRepeats } from 'flyd/module/droprepeats';
@@ -19,11 +19,24 @@ export const beatTime = stream.scan(
 // Just emits on the beat
 export const beat = dropRepeats(beatTime.map(Math.floor));
 
-export const start = () => Tone.start();
-const synth = new Tone.Synth().toDestination();
+stream.on(bpm => (Tone.Transport.bpm.value = bpm), BPM);
 
-//play a middle 'C' for the duration of an 8th note
-export const trigger = (beat: number) => {
-  const now = Tone.now();
-  synth.triggerAttackRelease(beat % 8 === 0 ? 'C5' : 'C4', '8n');
+stream.on(pauseState => {
+  if (pauseState) {
+    Tone.Transport.pause(Tone.now());
+  } else {
+    Tone.Transport.start(Tone.now());
+  }
+}, pause);
+
+export const start = async () => {
+  return Tone.start();
 };
+
+const synth = new Tone.Synth().toDestination();
+const loop = new Tone.Pattern(
+  (time, note) => {
+    synth.triggerAttackRelease(note, '4n');
+  },
+  ['C5', 'C4', 'C4', 'C4', 'C4', 'C4', 'B3', 'G#3']
+).start(0);
