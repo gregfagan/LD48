@@ -17,7 +17,11 @@ import {
   stackSize,
 } from './board';
 
-import { tetronimoShapes, tetronimoSize } from './tetronimoes';
+import {
+  tetronimoShapes,
+  tetronimoSize,
+  randomTetronimoPosition,
+} from './tetronimoes';
 
 import { blit } from './util';
 import { add, clampDimensions } from '../lib/math/vec2';
@@ -78,15 +82,19 @@ const tmpGenerateEmptyBoard = (): BoardState => {
   return { tetronimoes: [], holes: [], walls: [], boardType: EMPTY_BOARD };
 };
 
-const tmpGenerateHoleBoard = (): BoardState => {
+const tmpGenerateHoleBoard = (
+  existingTetronimos: TetronimoState[]
+): BoardState => {
+  const tetronimos = existingTetronimos.map(tetronimo => tetronimo.tetronimo);
+
   return {
     tetronimoes: [],
-    holes: [
-      {
-        tetronimo: T,
-        position: [2, 3],
-      },
-    ],
+    holes: tetronimos.map(tetronimoId => {
+      return {
+        tetronimo: tetronimoId,
+        position: randomTetronimoPosition(tetronimoId),
+      } as TetronimoState;
+    }),
     walls: [],
     boardType: FULL_BOARD,
   };
@@ -94,6 +102,7 @@ const tmpGenerateHoleBoard = (): BoardState => {
 
 export const stepStack = (state: State, stepId: number): State => {
   const newPlayerBoard = {
+    ...state.stack[0],
     tetronimoes: [
       ...state.playerBoard.tetronimoes,
       ...state.stack[0].tetronimoes,
@@ -106,7 +115,7 @@ export const stepStack = (state: State, stepId: number): State => {
   const newStack = [
     ...state.stack.slice(1),
     stepId % (stackSize + 1) === 0
-      ? tmpGenerateHoleBoard()
+      ? tmpGenerateHoleBoard(newPlayerBoard.tetronimoes)
       : tmpGenerateEmptyBoard(),
   ];
 
