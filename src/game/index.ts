@@ -15,9 +15,11 @@ import {
 } from './state';
 import { delta } from '../lib/stream/time';
 
+// Beats to count in
+const countIn = 1;
+let stepId = 0 - countIn;
 let boardState = state;
 let playBoard = allStateToGameBoards(boardState);
-let stepId = 0;
 
 let beat = 0;
 
