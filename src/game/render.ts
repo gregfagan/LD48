@@ -135,25 +135,39 @@ export const draw = glsl`
 
     float sdShape(vec2 p, Shape s) {
       float d = INFINITY;
-      vec2 sp = scaleToBeat(p, s.beat);
       
       float k = 0.01;
-      d = opSmoothUnion(d, sdBlock(sp, s.a), k);
-      d = opSmoothUnion(d, sdBlock(sp, s.b), k);
-      d = opSmoothUnion(d, sdBlock(sp, s.c), k);
-      d = opSmoothUnion(d, sdBlock(sp, s.d), k);
+      d = opSmoothUnion(d, sdBlock(p, s.a), k);
+      d = opSmoothUnion(d, sdBlock(p, s.b), k);
+      d = opSmoothUnion(d, sdBlock(p, s.c), k);
+      d = opSmoothUnion(d, sdBlock(p, s.d), k);
 
       d = s.invert ? -d : d;
 
       // crop to board
-      d = max(sdEdges(sp), d);
+      d = max(sdEdges(p), d);
 
       return d;
     }
 
     vec4 colorShape(vec2 p, Shape s) {
-      float shape = step(sdShape(p, s), 0.);
-      return vec4(vec3(s.color) * fadeToBeat(s.beat), shape);
+      // first, get the opacity of this shape
+      float alpha = step(sdShape(scaleToBeat(p, s.beat), s), 0.);
+
+      // next, loop through all the shapes to see if there is another one
+      // closer to the camera which is also opaque at this location.
+      float shadow = 0.;
+      for (int i = 0; i < numShapes; i++) {
+        Shape otherShape = shapes[i];
+        if (otherShape.active && otherShape.beat < s.beat) {
+          // when checking the other shape, project it onto this shape's beat
+          float d = step(sdShape(scaleToBeat(p, s.beat), otherShape), 0.);
+          if (d > 0.) { shadow = 0.1; break; }
+        }
+      }
+
+      vec3 color = vec3(s.color) * fadeToBeat(s.beat) - shadow;
+      return vec4(color, alpha);
     }
 
     void main() {
@@ -172,7 +186,7 @@ export const draw = glsl`
         color = mix(color, vec4(fadeToBeat(i)), edges);
       }
 
-      for (int i = 1; i >= 0; i--) {
+      for (int i = numShapes - 1; i >= 0; i--) {
         Shape s = shapes[i];
         if (s.active) {
           vec4 shape = colorShape(p, s);
