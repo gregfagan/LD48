@@ -24,7 +24,7 @@ import {
 } from './tetronimoes';
 
 import { currentBeat } from './audio';
-import * as vec2 from '../lib/math/vec2';
+import { vec2 } from '../lib/math';
 
 import { add } from '../lib/math/vec2';
 import { Vec2 } from 'regl';
@@ -125,32 +125,4 @@ export const moveTetronimo = (state: State, direction: Vec2): State => {
     ...state,
     tetronimoes: newTetronimoes,
   };
-};
-
-export const allStateToGameBoards = (state: State): GameBoard[] => {
-  let gameBoards = [];
-  for (let i = 0; i < 8; i++) {
-    const tetronimoes = state.tetronimoes.filter(tetronimoState => {
-      return tetronimoState.beat === state.currentBeat + i;
-    });
-    let gameBoard: GameBoard;
-    if (tetronimoes.length === 0) {
-      gameBoard = emptyGameBoard;
-    } else if (
-      tetronimoes.some(tetronimoState => tetronimoState.type === 'hole')
-    ) {
-      gameBoard = fullGameBoard;
-    } else {
-      gameBoard = emptyGameBoard;
-    }
-
-    gameBoards.push(
-      tetronimoes.reduce(
-        (acc, tetronimoState) => blitTetronimo(tetronimoState, gameBoard),
-        gameBoard
-      )
-    );
-  }
-
-  return gameBoards;
 };

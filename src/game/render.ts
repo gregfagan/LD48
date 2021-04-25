@@ -1,34 +1,18 @@
 import { flow } from 'fp-ts/lib/function';
-import { range } from 'fp-ts/lib/ReadonlyArray';
+import { range, takeLeft } from 'fp-ts/lib/ReadonlyArray';
 import { Regl, Texture2D, Vec2, Vec3, Vec4 } from 'regl';
 import { toGLColor } from '../lib/gl/color';
 import { quad } from '../lib/gl/config/quad';
 import { sdf } from '../lib/gl/config/sdf';
 import { glsl, uniform } from '../lib/gl/regl';
-import { stream, Stream } from '../lib/stream';
-import { GameBoard, Grid, isTetronimo, stackSize, Tetronimo } from './board';
-import { allStateToGameBoards, state } from './state';
+import { vec2 } from '../lib/math';
+import { log, stream, Stream } from '../lib/stream';
+import { T, Tetronimo, width } from './board';
+import { state } from './state';
+import { tetronimoShapes } from './tetronimoes';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('graphics');
-
-const playBoard = state.map(allStateToGameBoards);
-
-const textureSize: Vec2 = [16, 16];
-const numBoards = stackSize + 1;
-
-type RenderBoard = Grid<Vec4, typeof textureSize[0], typeof textureSize[1]>;
-
-const colorize = (board: GameBoard): RenderBoard =>
-  board.map(row =>
-    row.map(cell =>
-      isTetronimo(cell)
-        ? [...colors[cell](), 1]
-        : cell === 1
-        ? [1, 1, 1, 1]
-        : [0, 0, 0, 0]
-    )
-  ) as RenderBoard;
 
 const colors: Record<Tetronimo, Stream<Vec3>> = {
   I: gui.auto('#ff9b0d', 'I').map(toGLColor),
@@ -40,83 +24,162 @@ const colors: Record<Tetronimo, Stream<Vec3>> = {
   Z: gui.auto('#fffb51', 'Z').map(toGLColor),
 };
 
-export const render = (regl: Regl) => {
-  let textures = range(0, numBoards - 1).map(() =>
-    regl.texture({
-      min: 'nearest',
-      mag: 'nearest',
-      format: 'rgba',
-      type: 'float32',
-      shape: textureSize,
-      wrap: 'repeat',
-    })
+type TetronimoVertexes = [Vec2, Vec2, Vec2, Vec2];
+
+type Shape = {
+  blocks: TetronimoVertexes;
+  beat: number;
+  color: Vec3;
+  active: boolean;
+  invert: boolean;
+};
+
+const numShapesToRender = 8;
+
+const emptyShape: Shape = {
+  blocks: range(0, 3).map(() => vec2.zero()) as TetronimoVertexes,
+  beat: 0,
+  color: [0, 0, 0],
+  active: false,
+  invert: false,
+};
+
+const constantLength = (shapes: Shape[]) => {
+  const extraShapes = range(1, numShapesToRender - shapes.length).map(
+    () => emptyShape
   );
 
-  const update = flow(
-    (boards: GameBoard[]) => boards.map(colorize),
-    data => data.map((board, index) => textures[index].subimage(board))
-  );
+  return shapes.length < numShapesToRender
+    ? shapes.concat(extraShapes)
+    : shapes.slice(0, numShapesToRender);
+};
 
-  stream.on(update, playBoard);
+const u = state
+  .map(s => {
+    const shapes = takeLeft(8)(s.tetronimoes).map(
+      (shape): Shape => {
+        const blocks = tetronimoShapes[shape.tetronimo].map(v =>
+          vec2.add(v, shape.position)
+        ) as TetronimoVertexes;
+        const isHole = shape.type === 'hole';
+        const color: Vec3 = isHole ? [1, 1, 1] : colors[shape.tetronimo]();
+        return {
+          blocks,
+          color,
+          beat: shape.beat - s.currentBeat,
+          active: true,
+          invert: isHole,
+        };
+      }
+    );
 
-  const draw = glsl`
+    return shapes;
+  })
+  .map(constantLength);
+
+const points = ['a', 'b', 'c', 'd'];
+const uniforms = range(1, numShapesToRender).reduce((result, _, index) => {
+  for (const key of Object.keys(u()[index])) {
+    if (key === 'blocks') continue;
+    result[`shapes[${index}].${key}`] = () => u()[index][key as keyof Shape];
+  }
+  range(0, 3).forEach(j => {
+    result[`shapes[${index}].${points[j]}`] = () => u()[index].blocks[j];
+  });
+  return result;
+}, {} as Record<string, unknown>);
+
+export const draw = glsl`
     ${quad}
     ${sdf}
-    ${{
-      uniforms: textures.reduce((result, texture, i) => {
-        result['boards[' + i + ']'] = texture;
-        return result;
-      }, {} as Record<string, Texture2D>),
-      depth: { enable: false },
-    }}
+    ${{ uniforms, depth: { enable: false } }}
+    struct Shape {
+      vec2 a;
+      vec2 b;
+      vec2 c;
+      vec2 d;
+      float beat;
+      vec3 color;
+      bool active;
+      bool invert;
+    };
 
-    float crop(vec2 p) {
-      vec2 crop = step(vec2(-1), p) * step(p, vec2(1));
-      float c = crop.x * crop.y;
-      return c;
+    #define numShapes ${numShapesToRender}
+    #define numBeats ${numShapesToRender}.
+
+    #define board vec2(${width})
+    #define halfBoard (board/2.)
+
+    uniform Shape shapes[numShapes];
+
+    vec2 scaleToBeat(vec2 p, float beat) {
+      p -= halfBoard;
+      p *= (1. + beat * ${uniform(gui.auto(0.2, 'beatScale', 0.1, 1))});
+      p += halfBoard;
+      return p;
     }
 
-    uniform sampler2D boards[${numBoards}];
-  
-    vec4 colorBoard(int i, sampler2D tex) {
-      float scale = 1. + ${uniform(
-        gui.auto(0.3, 'stackScale', 0.1, 2)
-      )} * float(i);
-      vec2 p = st();
+    float fadeToBeat(float beat) {
+      return 1. - 0.8 * (beat / numBeats);
+    }
 
-      p *= scale;
-      float alpha = crop(p);
+    float sdEdges(vec2 p) {
+      // centered box with half edge of 8
+      return sdBox(p - halfBoard, halfBoard) - 0.15;
+    }
 
-      float d = sdBox(p,  vec2(1., 1));
-      d = abs(d);
-      d = step(d, 0.01);
-      vec4 outline = vec4(d * vec3(1), d);
+    float sdBlock(vec2 p, vec2 b) {
+      vec2 blockP = b + vec2(0.5);
+      return sdBox(p - blockP, vec2(0.5));
+    }
 
-      p = p / 2. + 0.5; 
-      p = p * vec2(1, -1);
-      vec4 board = texture2D(tex, p);
+    float sdShape(vec2 p, Shape s) {
+      float d = INFINITY;
+      vec2 sp = scaleToBeat(p, s.beat);
+      
+      float k = 0.01;
+      d = opSmoothUnion(d, sdBlock(sp, s.a), k);
+      d = opSmoothUnion(d, sdBlock(sp, s.b), k);
+      d = opSmoothUnion(d, sdBlock(sp, s.c), k);
+      d = opSmoothUnion(d, sdBlock(sp, s.d), k);
 
-      float shadow = texture2D(boards[0], p).w * 0.2;
-      if (i != 0) board.xyz *= (1. - shadow);
+      d = s.invert ? -d : d;
 
-      vec4 color = mix(vec4(board.xyz, board.w * alpha), outline, d);
-      return color;
+      // crop to board
+      d = max(sdEdges(sp), d);
+
+      return d;
+    }
+
+    vec4 colorShape(vec2 p, Shape s) {
+      float shape = step(sdShape(p, s), 0.);
+      return vec4(vec3(s.color) * fadeToBeat(s.beat), shape);
     }
 
     void main() {
-      vec4 color = vec4(0, 0, 0, 0);
-      for (int i = (${numBoards} - 1); i >= 0 ; i--) {
-        vec4 boardColor = colorBoard(i, boards[i]);
-        float iWeight = 1. - (float(i) / float(${numBoards - 1}));
-        float stackFade = ${uniform(gui.auto(0.8, 'stackFade', 0, 1))};
-        float stackOpacity = 1. - ((1. - iWeight) * stackFade);
-        boardColor = vec4(boardColor.xyz * stackOpacity, boardColor.w);
+      vec2 p = st();
+      p *= 1.2;             // global zoom out
+      p *= vec2(1, -1);     // flip Y so 0 is top left
+      p = p / 2. + 0.5;     // move origin to top left
+      p = p * board;        // scale up to game board size
 
-        color = mix(color, boardColor, boardColor.w);
+      vec4 color = vec4(0, 0, 0, 0);
+
+      for (float i = numBeats - 1.; i >= 0.; i--) {
+        vec2 pEdge = scaleToBeat(p, i);
+        float edges = sdEdges(pEdge);
+        edges = step(abs(edges), 0.15);
+        color = mix(color, vec4(fadeToBeat(i)), edges);
       }
+
+      for (int i = 1; i >= 0; i--) {
+        Shape s = shapes[i];
+        if (s.active) {
+          vec4 shape = colorShape(p, s);
+          color = mix(color, shape, shape.w);
+        }
+      }
+
       gl_FragColor = color;
     }
   `;
-
-  return regl(draw);
-};

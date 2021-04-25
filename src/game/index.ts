@@ -12,7 +12,7 @@ import {
   stepStack,
 } from './state';
 
-export { render } from './render';
+export { draw } from './render';
 
 // initial state
 let toneStarted = false;
