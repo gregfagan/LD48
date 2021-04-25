@@ -1,7 +1,8 @@
 import { Regl } from 'regl';
 import { stream } from '../lib/stream';
 import { render } from './render';
-import { clock, keys } from './util';
+import { clock, keys, dt } from './util';
+import { BPM } from './audio';
 import {
   state,
   allStateToGameBoards,
@@ -12,10 +13,13 @@ import {
   moveTetronimo,
   stepStack,
 } from './state';
+import { delta } from '../lib/stream/time';
 
 let boardState = state;
 let playBoard = allStateToGameBoards(boardState);
 let stepId = 0;
+
+let beat = 0;
 
 export const draw = (regl: Regl) => {
   // create a board renderer
@@ -25,6 +29,16 @@ export const draw = (regl: Regl) => {
   stream.on(() => {
     board.update(playBoard);
   }, clock);
+
+  stream.on(() => {
+    beat += dt();
+    if (beat > 1 / (BPM() / 60)) {
+      stepId++;
+      beat = 0;
+      boardState = stepStack(boardState, stepId);
+      playBoard = allStateToGameBoards(boardState);
+    }
+  }, dt);
 
   keys
     .map(key => {
