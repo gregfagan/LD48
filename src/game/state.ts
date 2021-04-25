@@ -33,51 +33,56 @@ type State = {
   currentBeat: number;
 };
 
-const randTetronimo = () => sample(tetronimoes);
-const tmpTetronimo = randTetronimo();
+const randomTetronimoShape = () => sample(tetronimoes);
 
+const randomTetronimoState = ({
+  beat = 0,
+  type = 'hole',
+  tetronimo = randomTetronimoShape(),
+  position = randomTetronimoPosition(tetronimo),
+  rotation = sample([0, 1, 2, 3]),
+}: Partial<TetronimoState>) => ({
+  tetronimo,
+  position,
+  rotation,
+  type,
+  beat,
+});
+
+const initialTetronimoState = randomTetronimoState({
+  type: 'player',
+  beat: currentBeat(),
+});
 const initialState: State = {
   tetronimoes: [
-    {
-      tetronimo: tmpTetronimo,
-      position: randomTetronimoPosition(tmpTetronimo),
-      type: 'player',
-      rotation: 0,
-      beat: currentBeat(),
-    },
+    initialTetronimoState,
+    randomTetronimoState({
+      tetronimo: initialTetronimoState.tetronimo,
+      beat: 7,
+    }),
   ],
   currentBeat: currentBeat(),
 };
 
 export const stepStack = (state: State, stepId: number): State => {
-  const newTetronimos: TetronimoState[] = [];
-
-  state.tetronimoes.forEach(tetronimoState => {
-    if (tetronimoState.type === 'player') {
-      newTetronimos.push({
-        ...tetronimoState,
-        beat: stepId,
-      });
-      return;
-    }
-
-    if (tetronimoState.beat >= stepId) {
-      newTetronimos.push(tetronimoState);
-    }
-  });
-
-  if (stepId % 8 === 0) {
-    newTetronimos.push({
-      tetronimo: tmpTetronimo,
-      position: randomTetronimoPosition(tmpTetronimo),
-      type: 'hole',
-      rotation: sample([0, 1, 2, 3]),
-      beat: stepId + 7,
-    });
-  }
+  const newHole =
+    stepId > 0 &&
+    stepId % 8 === 0 &&
+    randomTetronimoState({ type: 'hole', beat: stepId + 7 });
+  const newTetronimos: TetronimoState[] = [...state.tetronimoes]
+    .map(t =>
+      t.type === 'player'
+        ? {
+            ...t,
+            beat: stepId,
+            tetronimo: newHole ? newHole.tetronimo : t.tetronimo,
+          }
+        : t
+    )
+    .filter(t => t.beat >= stepId);
 
   return {
-    tetronimoes: newTetronimos,
+    tetronimoes: newHole ? [...newTetronimos, newHole] : newTetronimos,
     currentBeat: stepId,
   };
 };
