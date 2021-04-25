@@ -5,10 +5,11 @@ import { stream, switchLatest, everyNth, Stream } from '.';
  * Wall time updated by animation frame (60Hz)
  */
 export function clock() {
+  const now = performance.now();
   const id = stream<number>();
   const time = stream<number>();
   const clock = stream.merge(
-    stream.of(0),
+    stream.of(now),
     stream.immediate(
       stream.combine(
         time => {
@@ -38,7 +39,7 @@ export function stopwatch(stopped: Stream<boolean>) {
         }
       } else {
         // Create a new clock and track time deltas
-        return clock().pipe(delta);
+        return clock().pipe(delta).map(Math.abs);
       }
     },
     [stopped]
