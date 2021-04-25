@@ -1,8 +1,8 @@
 import { Regl } from 'regl';
 import { stream } from '../lib/stream';
 import { render } from './render';
-import { clock, keys } from './util';
-import { trigger, start, beat } from './audio';
+import { clock, keys, pause } from './util';
+import { start, beat } from './audio';
 import {
   state,
   allStateToGameBoards,
@@ -32,9 +32,6 @@ export const draw = (regl: Regl) => {
   stream.on(currentBeat => {
     boardState = stepStack(boardState, currentBeat);
     playBoard = allStateToGameBoards(boardState);
-    if (toneStarted) {
-      trigger(currentBeat);
-    }
   }, beat);
 
   keys
@@ -55,13 +52,15 @@ export const draw = (regl: Regl) => {
         boardState = moveTetronimo(boardState, Up);
       }
 
-      return key;
-    })
-    .map(keyMap => {
-      if (!toneStarted && Object.keys(keyMap).length) {
-        start();
-        toneStarted = true;
+      if (key.p) {
+        if (!toneStarted) {
+          start();
+          toneStarted = true;
+        }
+        pause(!pause());
       }
+    })
+    .map(() => {
       playBoard = allStateToGameBoards(boardState);
     });
 
