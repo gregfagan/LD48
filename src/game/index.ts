@@ -2,7 +2,7 @@ import { Regl } from 'regl';
 import { stream } from '../lib/stream';
 import { render } from './render';
 import { clock, keys, dt } from './util';
-import { BPM } from './audio';
+import { BPM, trigger, start } from './audio';
 import {
   state,
   allStateToGameBoards,
@@ -15,13 +15,15 @@ import {
 } from './state';
 import { delta } from '../lib/stream/time';
 
+let toneStarted = false;
+
 // Beats to count in
 const countIn = 1;
 let stepId = 0 - countIn;
 let boardState = state;
 let playBoard = allStateToGameBoards(boardState);
 
-let beat = 0;
+let counter = 0;
 
 export const draw = (regl: Regl) => {
   // create a board renderer
@@ -33,12 +35,15 @@ export const draw = (regl: Regl) => {
   }, clock);
 
   stream.on(() => {
-    beat += dt();
-    if (beat > 1 / (BPM() / 60)) {
+    counter += dt();
+    if (counter > 1 / (BPM() / 60)) {
       stepId++;
-      beat = 0;
+      counter = 0;
       boardState = stepStack(boardState, stepId);
       playBoard = allStateToGameBoards(boardState);
+      if (toneStarted) {
+        trigger(stepId);
+      }
     }
   }, dt);
 
@@ -64,8 +69,14 @@ export const draw = (regl: Regl) => {
         stepId++;
         boardState = stepStack(boardState, stepId);
       }
+
+      return key;
     })
-    .map(() => {
+    .map(keyMap => {
+      if (!toneStarted && Object.keys(keyMap).length) {
+        start();
+        toneStarted = true;
+      }
       playBoard = allStateToGameBoards(boardState);
     });
 
