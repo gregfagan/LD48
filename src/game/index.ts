@@ -17,6 +17,12 @@ export { render } from './render';
 // initial state
 let toneStarted = false;
 
+let currentBeat = 0;
+Tone.Transport.scheduleRepeat(() => {
+  state(stepStack(state(), currentBeat));
+  currentBeat += 1;
+}, '4n');
+
 // respond to input
 keys.map(key => {
   if (key.a) state(moveTetronimo(state(), Left));
