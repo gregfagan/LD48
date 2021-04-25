@@ -1,4 +1,4 @@
-import { I, T, J, L, S, Z, O } from './board';
+import { I, T, J, L, S, Z, O, Tetronimo } from './board';
 
 export const tetronimoShapes = {
   I: [[I, I, I, I]],
@@ -30,7 +30,7 @@ export const tetronimoShapes = {
   ],
 };
 
-export const tetronimoSize = tetronimoId => {
+export const tetronimoSize = (tetronimoId: Tetronimo) => {
   const height = tetronimoShapes[tetronimoId].length;
   const width = tetronimoShapes[tetronimoId][0].length;
   return { height, width };
