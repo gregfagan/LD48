@@ -9,7 +9,7 @@ import { vec2 } from '../lib/math';
 import { log, stream, Stream } from '../lib/stream';
 import { width } from './board';
 import { state } from './state';
-import { Tetronimo, tetronimoShapes } from './tetronimoes';
+import { BlockPositions, Tetronimo, transform } from './tetronimoes';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('graphics');
@@ -24,10 +24,8 @@ const colors: Record<Tetronimo, Stream<Vec3>> = {
   Z: gui.auto('#fffb51', 'Z').map(toGLColor),
 };
 
-type TetronimoVertexes = [Vec2, Vec2, Vec2, Vec2];
-
 type Shape = {
-  blocks: TetronimoVertexes;
+  blocks: BlockPositions;
   beat: number;
   color: Vec3;
   active: boolean;
@@ -37,7 +35,7 @@ type Shape = {
 const numShapesToRender = 8;
 
 const emptyShape: Shape = {
-  blocks: range(0, 3).map(() => vec2.zero()) as TetronimoVertexes,
+  blocks: range(0, 3).map(() => vec2.zero()) as BlockPositions,
   beat: 0,
   color: [0, 0, 0],
   active: false,
@@ -53,28 +51,14 @@ const constantLength = (shapes: Shape[]) => {
     ? shapes.concat(extraShapes)
     : shapes.slice(0, numShapesToRender);
 };
-
-const rotations = [
-  [1, 0, 0, 1],
-  [0, -1, 1, 0],
-  [-1, 0, 0, -1],
-  [0, 1, -1, 0],
-];
-
 const u = state
   .map(s => {
     const shapes = takeLeft(8)(s.tetronimoes).map(
       (shape): Shape => {
-        const blocks = tetronimoShapes[shape.tetronimo].map(v =>
-          vec2.add(
-            vec2.transformMat2(v, rotations[shape.rotation]),
-            shape.position
-          )
-        ) as TetronimoVertexes;
         const isHole = shape.type === 'hole';
         const color: Vec3 = isHole ? [1, 1, 1] : colors[shape.tetronimo]();
         return {
-          blocks,
+          blocks: transform(shape),
           color,
           beat: shape.beat - s.currentBeat,
           active: true,

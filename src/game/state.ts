@@ -1,16 +1,13 @@
-import { width, height } from './board';
-
 import {
+  moveInBounds,
+  O,
   randomTetronimoPosition,
   Tetronimo,
   tetronimoes,
-  tetronimoPosition,
 } from './tetronimoes';
 
 import { currentBeat } from './audio';
 import { vec2 } from '../lib/math';
-
-import { add } from '../lib/math/vec2';
 import { Vec2 } from 'regl';
 import { stream } from '../lib/stream';
 import { sample } from './util';
@@ -20,7 +17,7 @@ export const Right: Vec2 = vec2.of(1, 0);
 export const Up: Vec2 = vec2.of(0, -1);
 export const Down: Vec2 = vec2.of(0, 1);
 
-type TetronimoState = {
+export type TetronimoState = {
   tetronimo: Tetronimo;
   position: Vec2;
   type: 'player' | 'hole';
@@ -41,13 +38,14 @@ const randomTetronimoState = ({
   tetronimo = randomTetronimoShape(),
   position = randomTetronimoPosition(tetronimo),
   rotation = sample([0, 1, 2, 3]),
-}: Partial<TetronimoState>) => ({
-  tetronimo,
-  position,
-  rotation,
-  type,
-  beat,
-});
+}: Partial<TetronimoState>) =>
+  moveInBounds({
+    tetronimo,
+    position,
+    rotation,
+    type,
+    beat,
+  });
 
 const initialTetronimoState = randomTetronimoState({
   type: 'player',
@@ -89,45 +87,24 @@ export const stepStack = (state: State, stepId: number): State => {
 
 export const state = stream.of(initialState);
 
-export const rotateTetronimo = (state: State, direction: number): State => {
-  const newTetronimoes = state.tetronimoes.map(tetronimoState => {
-    if (tetronimoState.type === 'player') {
-      const newRotation = tetronimoState.rotation + direction;
-      return {
-        ...tetronimoState,
-        rotation: newRotation > 3 ? 0 : newRotation < 0 ? 3 : newRotation,
-      } as TetronimoState;
-    }
-    return tetronimoState;
-  });
-  return { ...state, tetronimoes: newTetronimoes };
-};
+export const rotateTetronimo = (state: State, direction: number): State => ({
+  ...state,
+  tetronimoes: state.tetronimoes.map(ts =>
+    // Don't rotate Os, they're fully symmetric
+    ts.type === 'player' && ts.tetronimo !== O
+      ? moveInBounds({
+          ...ts,
+          rotation: (ts.rotation - direction + 4) % 4,
+        } as TetronimoState)
+      : ts
+  ),
+});
 
-export const moveTetronimo = (state: State, direction: Vec2): State => {
-  const newTetronimoes = state.tetronimoes.map(tetronimoState => {
-    if (tetronimoState.type === 'player') {
-      const newPosition = add(tetronimoState.position, direction);
-      const newShape = tetronimoPosition(tetronimoState.tetronimo, newPosition);
-
-      newPosition[0] = newShape.some(([x]) => x < 0 || x >= width)
-        ? tetronimoState.position[0]
-        : newPosition[0];
-
-      newPosition[1] = newShape.some(([, y]) => y < 0 || y >= height)
-        ? tetronimoState.position[1]
-        : newPosition[1];
-
-      return {
-        ...tetronimoState,
-        position: newPosition,
-      } as TetronimoState;
-    }
-
-    return tetronimoState;
-  });
-
-  return {
-    ...state,
-    tetronimoes: newTetronimoes,
-  };
-};
+export const moveTetronimo = (state: State, direction: Vec2): State => ({
+  ...state,
+  tetronimoes: state.tetronimoes.map(ts =>
+    ts.type === 'player'
+      ? moveInBounds({ ...ts, position: vec2.add(ts.position, direction) })
+      : ts
+  ),
+});
