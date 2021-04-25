@@ -52,7 +52,7 @@ export const draw = (regl: Regl) => {
         boardState = moveTetronimo(boardState, Up);
       }
 
-      if (key.p) {
+      if (key[' ']) {
         if (!toneStarted) {
           start();
           toneStarted = true;
