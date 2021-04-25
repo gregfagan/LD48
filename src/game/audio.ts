@@ -2,7 +2,7 @@ import { gui as baseGui } from './util';
 import * as Tone from 'tone';
 
 const gui = baseGui.addFolder('audio');
-export const BPM = gui.auto(60, 'BPM');
+export const BPM = gui.auto(120, 'BPM', 60, 240);
 
 export const start = () => Tone.start();
 const synth = new Tone.Synth().toDestination();
