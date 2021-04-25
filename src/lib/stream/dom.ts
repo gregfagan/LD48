@@ -1,6 +1,7 @@
 import { equals, prop } from 'ramda';
 import { Vec2 } from 'regl';
 import { event, Stream, stream } from '.';
+import filter from 'flyd/module/filter';
 
 export const documentHasFocus = stream.merge(
   stream(document.hasFocus()),
@@ -23,6 +24,9 @@ export const keyboard = (el: EventTarget): Stream<KeyMap> =>
       event<KeyboardEvent>(el, 'keyup')
     )
   );
+
+export const keypress = (key: KeyboardEvent['key']) =>
+  filter(ev => ev.key === key, event<KeyboardEvent>(document, 'keydown'));
 
 interface MouseMoveElement extends EventTarget {
   width: number;
