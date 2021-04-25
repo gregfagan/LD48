@@ -1,25 +1,9 @@
-import {
-  GameBoard,
-  emptyGameBoard,
-  fullGameBoard,
-  Tetronimo,
-  I,
-  J,
-  T,
-  L,
-  Z,
-  S,
-  O,
-  width,
-  height,
-  FULL_BOARD,
-  EMPTY_BOARD,
-  stackSize,
-} from './board';
+import { width, height } from './board';
 
 import {
   randomTetronimoPosition,
-  blitTetronimo,
+  Tetronimo,
+  tetronimoes,
   tetronimoPosition,
 } from './tetronimoes';
 
@@ -49,7 +33,8 @@ type State = {
   currentBeat: number;
 };
 
-const tmpTetronimo = Z;
+const randTetronimo = () => sample(tetronimoes);
+const tmpTetronimo = randTetronimo();
 
 const initialState: State = {
   tetronimoes: [

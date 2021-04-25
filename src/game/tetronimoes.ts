@@ -1,18 +1,11 @@
-import {
-  I,
-  T,
-  J,
-  L,
-  S,
-  Z,
-  O,
-  width,
-  height,
-  Tetronimo,
-  GameBoard,
-} from './board';
+import { width, height } from './board';
 import { Vec2 } from 'regl';
-import * as vec2 from '../lib/math/vec2';
+import { vec2 } from '../lib/math';
+
+// prettier-ignore
+export const I = 'I', J = 'J', L = 'L', O = 'O', S = 'S', T = 'T', Z = 'Z';
+export const tetronimoes = [I, J, L, O, S, T, Z] as const;
+export type Tetronimo = typeof tetronimoes[number];
 
 export const tetronimoShapes = {
   I: [vec2.of(-1, 0), vec2.of(0, 0), vec2.of(1, 0), vec2.of(2, 0)],
@@ -41,26 +34,4 @@ export const randomTetronimoPosition = (tetronimoId: Tetronimo): Vec2 => {
   const col = Math.floor(Math.random() * maxColumn) + minColumn;
 
   return vec2.of(col, row);
-};
-
-export const blitTetronimo = (tetronimoState, gameBoard) => {
-  const origin = tetronimoState.position;
-  const shape = tetronimoShapes[tetronimoState.tetronimo];
-  const rotatedShape = vec2.transformMat2(shape, [0, -1, 1, 0]);
-  console.log({ shape, rotatedShape });
-  const translatedShape = rotatedShape.map((position: Vec2) =>
-    vec2.add(position, origin)
-  );
-  const newBoard = gameBoard.map((row, y) =>
-    row.map((column, x) => {
-      if (
-        translatedShape.some(position => vec2.equals(position, vec2.of(x, y)))
-      ) {
-        return tetronimoState.type === 'hole' ? 0 : tetronimoState.tetronimo;
-      }
-      return tetronimoState.type === 'hole' ? 1 : 0;
-    })
-  );
-
-  return newBoard;
 };

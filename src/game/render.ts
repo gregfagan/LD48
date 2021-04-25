@@ -7,9 +7,9 @@ import { sdf } from '../lib/gl/config/sdf';
 import { glsl, uniform } from '../lib/gl/regl';
 import { vec2 } from '../lib/math';
 import { log, stream, Stream } from '../lib/stream';
-import { T, Tetronimo, width } from './board';
+import { width } from './board';
 import { state } from './state';
-import { tetronimoShapes } from './tetronimoes';
+import { Tetronimo, tetronimoShapes } from './tetronimoes';
 import { gui as baseGui } from './util';
 
 const gui = baseGui.addFolder('graphics');
