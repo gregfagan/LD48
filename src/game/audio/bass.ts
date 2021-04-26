@@ -3,7 +3,7 @@ import * as Tone from 'tone';
 import { addMixer, generatePatterns } from './util';
 import { gui, range, sample } from '../util';
 
-const monoBassSynth = () => {
+export const monoBassSynth = () => {
   const bass = new Tone.MonoSynth();
   bass.oscillator.type = sample([
     'pulse',
@@ -26,11 +26,4 @@ const monoBassSynth = () => {
     decay: sample([0.01, '8n', '4n']),
   });
   return bass;
-};
-
-export const generateBassSynth = () => {
-  const bassGain = addMixer(gui, 'bass');
-  const bassSynth = monoBassSynth();
-  bassSynth.connect(bassGain);
-  return bassSynth;
 };

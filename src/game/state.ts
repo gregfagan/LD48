@@ -151,7 +151,6 @@ export const stepState = (s: State, beat: number): State => {
   }
 
   if (isPhrase(beat)) {
-    console.log('here', beat);
     BPM(BPM() + 20);
   }
 

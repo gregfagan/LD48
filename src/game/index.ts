@@ -1,6 +1,6 @@
 import { keys, pause } from './util';
 import { keypress } from '../lib/stream/dom';
-import { playSound, currentBeat, downbeats, BPM } from './audio';
+import { playSound, currentBeat, initializeAudio, BPM } from './audio';
 import {
   state,
   Left,
@@ -19,11 +19,13 @@ import { event, filter, log, stream } from '../lib/stream';
 export { draw } from './render';
 import './ui';
 
+let destroyAudio: Function;
 // This stream "debounces" the end of the game so that if the
 // player is mashing the buttons, they don't immediately skip
 // into a new game.
 const canStartNewGame = stream.of(true);
 stream.on(() => {
+  destroyAudio();
   canStartNewGame(false);
   setTimeout(() => canStartNewGame(true), 750);
 }, wallCollisions);
@@ -32,8 +34,10 @@ const startNewGame = (pressedKey: string) => {
   if (state().currentBeat > 0) {
     state(generateNewState());
     isGameRunning(true);
+    destroyAudio = initializeAudio();
   } else if (pressedKey === initialMovement) {
     isGameRunning(true);
+    destroyAudio = initializeAudio();
   }
 
   if (isGameRunning()) BPM(100);
