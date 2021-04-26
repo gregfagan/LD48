@@ -58,13 +58,40 @@ const patterns = [
   generatePatterns(scale),
 ];
 
+const effectMixer = addMixer(gui, 'effect', 0.4);
+const effectReverb = new Tone.Reverb(0.5).connect(effectMixer);
+effectReverb.set({
+  wet: 0.5,
+});
+const effectDelay = new Tone.PingPongDelay('16n', 0.4).connect(effectReverb);
+effectDelay.set({
+  wet: 0.5,
+});
+const effectSynth = new Tone.MonoSynth().connect(effectDelay);
+effectSynth.oscillator.type = 'fmsine';
+effectSynth.envelope.set({
+  attack: 0.01,
+  decay: 0.2,
+});
+effectSynth.filterEnvelope.set({
+  attack: 0.01,
+  decay: 0.2,
+});
+
+const effectPattern = generatePatterns(scale, 5, 6);
+
+export const playSound = () => {
+  effectSynth.triggerAttackRelease(sample(effectPattern), '16n', Tone.now());
+};
+
 const arpGain = addMixer(gui, 'arp');
 const arpDelay = new Tone.PingPongDelay('16n').connect(arpGain);
 const delayLFO = new Tone.LFO('4m', 0, 1).connect(arpDelay.wet);
 const arp = generateBassSynth().connect(arpDelay);
 const arpPattern = new Tone.Pattern(
   (time, note) => {
-    arp.triggerAttackRelease(note, '8n', time);
+    const duration = sample(['8n', '4n', '16n']);
+    arp.triggerAttackRelease(note, duration, time);
   },
   sample(patterns),
   'up'
@@ -87,10 +114,11 @@ const bassPattern = new Tone.Pattern(
 bassPattern.playbackRate = 0.5;
 
 export const start = async () => {
-  Tone.start();
-  drumLoop.start(0);
-  bassPattern.start(0);
-  arpPattern.start(0);
+  Tone.start().then(() => {
+    drumLoop.start(0);
+    bassPattern.start(0);
+    arpPattern.start(0);
+  });
 };
 
 //['E2', 'Gb1', 'A2', 'Gb2'],

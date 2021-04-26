@@ -1,5 +1,6 @@
 import { keys, pause } from './util';
-import { start } from './audio';
+import { keypress } from '../lib/stream/dom';
+import { start, playSound } from './audio';
 import {
   state,
   Left,
@@ -14,6 +15,13 @@ export { draw } from './render';
 
 // initial state
 let toneStarted = false;
+
+keypress('a').map(playSound);
+keypress('s').map(playSound);
+keypress('d').map(playSound);
+keypress('q').map(playSound);
+keypress('w').map(playSound);
+keypress('e').map(playSound);
 
 // respond to input
 keys.map(key => {
