@@ -1,9 +1,10 @@
 import { gui as baseGui, pause } from './util';
 import * as Tone from 'tone';
-import { stream, filter } from '../lib/stream';
+import { stream, filter, event } from '../lib/stream';
 import { sample } from './util';
 import { addMixer, generateScale, generatePatterns } from './audio/util';
 import { generateBassSynth } from './audio/bass';
+import { isGameRunning } from './state';
 const gui = baseGui.addFolder('audio');
 
 export const BPM = gui.auto(120, 'BPM', 60, 240);
@@ -14,13 +15,15 @@ export const currentBeat = stream.of(0);
 Tone.Transport.scheduleRepeat(() => {
   currentBeat(currentBeat() + 1);
 }, '4n');
-
-export const downbeats = filter(
-  Boolean,
-  currentBeat.map(beat => beat % 8 === 0)
-);
+export const isDownbeat = (beat: number) => beat % 8 === 0;
+export const downbeats = filter(Boolean, currentBeat.map(isDownbeat));
 
 stream.on(bpm => (Tone.Transport.bpm.value = bpm), BPM);
+
+const isAudioPaused = stream.combine(
+  (pause, isGameRunning) => pause() || !isGameRunning(),
+  [pause, isGameRunning]
+);
 
 stream.on(pauseState => {
   if (pauseState) {
@@ -28,7 +31,7 @@ stream.on(pauseState => {
   } else {
     Tone.Transport.start(Tone.now());
   }
-}, pause);
+}, isAudioPaused);
 
 const drumGain = addMixer(gui, 'Drums', 0.4);
 const distortion = new Tone.Distortion(4.2).connect(drumGain);
@@ -136,5 +139,12 @@ export const start = async () => {
     hatLoop.start(0);
   });
 };
+
+// Start audio on the first keydown event
+const e = event(document, 'keydown');
+stream.on(() => {
+  start();
+  e.end(true);
+}, e);
 
 //['E2', 'Gb1', 'A2', 'Gb2'],

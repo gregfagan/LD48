@@ -147,6 +147,7 @@ export const draw = glsl`
     vec4 colorShape(vec2 p, Shape s) {
       // first, get the opacity of this shape
       float alpha = step(sdShape(scaleToBeat(p, s.beat), s), 0.);
+      if (s.invert) alpha *= 0.98;
 
       // next, loop through all the shapes to see if there is another one
       // closer to the camera which is also opaque at this location.
