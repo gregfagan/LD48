@@ -42,21 +42,12 @@ const effectDelay = new Tone.PingPongDelay('16n', 0.2).connect(effectReverb);
 effectDelay.set({
   wet: 0.5,
 });
-const effectSynth = new Tone.MonoSynth().connect(effectDelay);
-effectSynth.oscillator.type = 'fmsine';
-effectSynth.envelope.set({
-  attack: 0.01,
-  decay: 0.2,
-});
-effectSynth.filterEnvelope.set({
-  attack: 0.01,
-  decay: 0.2,
-});
+const effectSynth = new Tone.PolySynth().connect(effectDelay);
 
-const effectPattern = generatePatterns(scale, 5, 6).filter(note => note);
+const effectPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
 
 export const playSound = () => {
-  effectSynth.triggerAttackRelease(sample(effectPattern), '16n', Tone.now());
+  effectSynth.triggerAttackRelease(sample(effectPattern), '16n');
 };
 
 /**
@@ -130,7 +121,7 @@ export const initializeAudio = () => {
    * Setup Bass
    */
 
-  const bassGain = addMixer(gui, 'bass');
+  const bassGain = addMixer(gui, 'bass', 0.5);
   const bass = monoBassSynth().connect(bassGain);
   const bassPattern = new Tone.Pattern(
     (time, note) => {
