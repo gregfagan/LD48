@@ -11,7 +11,7 @@ import { vec2 } from '../lib/math';
 import { Vec2 } from 'regl';
 import { filter, log, stream } from '../lib/stream';
 import { sample } from './util';
-import { isDownbeat } from './audio';
+import { isDownbeat, isPhrase, BPM } from './audio';
 
 export const Left: Vec2 = vec2.of(-1, 0);
 export const Right: Vec2 = vec2.of(1, 0);
@@ -90,6 +90,11 @@ export const stepState = (s: State, beat: number): State => {
 
   if (isDownbeat(beat)) {
     newState = addHole(newState, beat);
+  }
+
+  if (isPhrase(beat)) {
+    console.log('here', beat);
+    BPM(BPM() + 20);
   }
 
   return newState;

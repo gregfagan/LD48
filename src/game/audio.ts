@@ -8,7 +8,6 @@ import { isGameRunning } from './state';
 const gui = baseGui.addFolder('audio');
 
 export const BPM = gui.auto(120, 'BPM', 60, 240);
-
 const scale = generateScale();
 
 export const currentBeat = stream.of(0);
@@ -16,6 +15,7 @@ Tone.Transport.scheduleRepeat(() => {
   currentBeat(currentBeat() + 1);
 }, '4n');
 export const isDownbeat = (beat: number) => beat % 8 === 0;
+export const isPhrase = (beat: number) => beat % 32 === 0;
 export const downbeats = filter(Boolean, currentBeat.map(isDownbeat));
 
 stream.on(bpm => (Tone.Transport.bpm.value = bpm), BPM);
@@ -72,7 +72,7 @@ const effectReverb = new Tone.Reverb(0.5).connect(effectMixer);
 effectReverb.set({
   wet: 0.5,
 });
-const effectDelay = new Tone.PingPongDelay('16n', 0.4).connect(effectReverb);
+const effectDelay = new Tone.PingPongDelay('16n', 0.2).connect(effectReverb);
 effectDelay.set({
   wet: 0.5,
 });
@@ -87,7 +87,7 @@ effectSynth.filterEnvelope.set({
   decay: 0.2,
 });
 
-const effectPattern = generatePatterns(scale, 5, 6);
+const effectPattern = generatePatterns(scale, 5, 6).filter(note => note);
 
 export const playSound = () => {
   effectSynth.triggerAttackRelease(sample(effectPattern), '16n', Tone.now());

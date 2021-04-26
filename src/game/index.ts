@@ -1,6 +1,6 @@
 import { keys, pause } from './util';
 import { keypress } from '../lib/stream/dom';
-import { playSound, currentBeat, downbeats } from './audio';
+import { playSound, currentBeat, downbeats, BPM } from './audio';
 import {
   state,
   Left,
@@ -30,6 +30,7 @@ stream.on(() => {
 const startNewGame = () => {
   isGameRunning(true);
   if (state().currentBeat !== 0) {
+    BPM(100);
     state(generateInitialState());
   }
 };
