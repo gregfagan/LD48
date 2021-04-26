@@ -100,7 +100,7 @@ const patterns = [
 
 const arpGain = addMixer(gui, 'arp');
 const arpDelay = new Tone.PingPongDelay('16n').connect(arpGain);
-const delayLFO = new Tone.LFO('4m', 0, 1).connect(arpDelay.wet);
+const delayLFO = new Tone.LFO('4m', 0.25, 0.5).connect(arpDelay.wet);
 delayLFO.start(0);
 const arp = generateBassSynth().connect(arpDelay);
 const arpPattern = new Tone.Pattern(

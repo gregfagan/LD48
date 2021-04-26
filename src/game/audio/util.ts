@@ -47,7 +47,8 @@ export const generatePatterns = (
 ) => {
   const pattern = [];
   for (let i = 0; i < length; i++) {
-    pattern.push(`${sample(scale)}${sample([octaveMin, octaveMax])}`);
+    const newVal = `${sample(scale)}${sample([octaveMin, octaveMax])}`;
+    pattern.push(sample([newVal, newVal, newVal, null]));
   }
   return pattern;
 };
