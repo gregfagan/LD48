@@ -7,7 +7,7 @@ import { generateBassSynth } from './audio/bass';
 import { isGameRunning } from './state';
 const gui = baseGui.addFolder('audio');
 
-export const BPM = gui.auto(120, 'BPM', 60, 240);
+export const BPM = gui.auto(100, 'BPM', 60, 240);
 const scale = generateScale();
 
 export const currentBeat = stream.of(0);
