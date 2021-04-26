@@ -40,7 +40,7 @@ export const generateScale = () => {
 };
 
 export const generatePatterns = (
-  scale,
+  scale: string[],
   octaveMin = 3,
   octaveMax = 4,
   length = 16
