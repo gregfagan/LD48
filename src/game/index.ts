@@ -1,5 +1,3 @@
-import * as Tone from 'tone';
-
 import { keys, pause } from './util';
 import { start } from './audio';
 import {
@@ -10,19 +8,12 @@ import {
   Down,
   moveTetronimo,
   rotateTetronimo,
-  stepStack,
 } from './state';
 
 export { draw } from './render';
 
 // initial state
 let toneStarted = false;
-
-let currentBeat = 0;
-Tone.Transport.scheduleRepeat(() => {
-  state(stepStack(state(), currentBeat));
-  currentBeat += 1;
-}, '4n');
 
 // respond to input
 keys.map(key => {

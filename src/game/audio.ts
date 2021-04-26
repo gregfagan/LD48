@@ -1,6 +1,6 @@
-import { dt, gui as baseGui, pause } from './util';
+import { gui as baseGui, pause } from './util';
 import * as Tone from 'tone';
-import { stream } from '../lib/stream';
+import { stream, filter } from '../lib/stream';
 import { sample } from './util';
 import { addMixer, generateScale, generatePatterns } from './audio/util';
 import { generateBassSynth } from './audio/bass';
@@ -14,6 +14,11 @@ export const currentBeat = stream.of(0);
 Tone.Transport.scheduleRepeat(() => {
   currentBeat(currentBeat() + 1);
 }, '4n');
+
+export const downbeats = filter(
+  Boolean,
+  currentBeat.map(beat => beat % 8 === 0)
+);
 
 stream.on(bpm => (Tone.Transport.bpm.value = bpm), BPM);
 
