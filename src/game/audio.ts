@@ -1,7 +1,6 @@
-import { dt, gui as baseGui, pause } from './util';
+import { gui as baseGui, pause } from './util';
 import * as Tone from 'tone';
-import { stream } from '../lib/stream';
-import { times } from 'ramda';
+import { stream, filter } from '../lib/stream';
 
 const gui = baseGui.addFolder('audio');
 
@@ -11,6 +10,11 @@ export const currentBeat = stream.of(0);
 Tone.Transport.scheduleRepeat(() => {
   currentBeat(currentBeat() + 1);
 }, '4n');
+
+export const downbeats = filter(
+  Boolean,
+  currentBeat.map(beat => beat % 8 === 0)
+);
 
 stream.on(bpm => (Tone.Transport.bpm.value = bpm), BPM);
 

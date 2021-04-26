@@ -1,7 +1,11 @@
 import flyd from 'flyd';
 import { add, equals, modulo, partial, pipe, tap, __ } from 'ramda';
+import filter from 'flyd/module/filter';
+import { dropRepeats } from 'flyd/module/droprepeats';
 import type { Stream, StreamAPI } from './types';
 export * from './types';
+
+export { filter, dropRepeats };
 
 /**
  * Better flyd API by combining CreateStream with static, like mithril

@@ -75,3 +75,21 @@ export const moveInBounds = (ts: TetronimoState): TetronimoState => {
     position: vec2.add(ts.position, vec2.add(minAdjust, maxAdjust)),
   };
 };
+
+export const collisions = (a: TetronimoState, b: TetronimoState): Vec2[] => {
+  const aBlocks = transform(a);
+  const bBlocks = transform(b);
+  const collisions: Vec2[] = [];
+  for (const i of aBlocks) {
+    for (const j of bBlocks) {
+      if (vec2.equals(i, j)) collisions.push(i);
+    }
+  }
+  return collisions;
+};
+
+export const doesCollide = (a: TetronimoState, b: TetronimoState): boolean =>
+  collisions(a, b).length > 0;
+
+export const doesOverlap = (a: TetronimoState, b: TetronimoState): boolean =>
+  collisions(a, b).length === 4;

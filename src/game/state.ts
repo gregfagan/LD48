@@ -1,4 +1,5 @@
 import {
+  doesOverlap,
   moveInBounds,
   O,
   randomTetronimoPosition,
@@ -6,10 +7,10 @@ import {
   tetronimoes,
 } from './tetronimoes';
 
-import { currentBeat } from './audio';
+import { currentBeat, downbeats } from './audio';
 import { vec2 } from '../lib/math';
 import { Vec2 } from 'regl';
-import { stream } from '../lib/stream';
+import { filter, log, stream, sample as streamSample } from '../lib/stream';
 import { sample } from './util';
 
 export const Left: Vec2 = vec2.of(-1, 0);
@@ -30,12 +31,10 @@ type State = {
   currentBeat: number;
 };
 
-const randomTetronimoShape = () => sample(tetronimoes);
-
 const randomTetronimoState = ({
   beat = 0,
   type = 'hole',
-  tetronimo = randomTetronimoShape(),
+  tetronimo = sample(tetronimoes),
   position = randomTetronimoPosition(tetronimo),
   rotation = sample([0, 1, 2, 3]),
 }: Partial<TetronimoState>) =>
@@ -56,36 +55,65 @@ const initialState: State = {
     initialTetronimoState,
     randomTetronimoState({
       tetronimo: initialTetronimoState.tetronimo,
-      beat: 7,
+      beat: 8,
     }),
   ],
   currentBeat: currentBeat(),
 };
 
-export const stepStack = (state: State, stepId: number): State => {
-  const newHole =
-    stepId > 0 &&
-    stepId % 8 === 0 &&
-    randomTetronimoState({ type: 'hole', beat: stepId + 7 });
-  const newTetronimos: TetronimoState[] = [...state.tetronimoes]
-    .map(t =>
-      t.type === 'player'
-        ? {
-            ...t,
-            beat: stepId,
-            tetronimo: newHole ? newHole.tetronimo : t.tetronimo,
-          }
-        : t
-    )
-    .filter(t => t.beat >= stepId);
-
-  return {
-    tetronimoes: newHole ? [...newTetronimos, newHole] : newTetronimos,
-    currentBeat: stepId,
-  };
-};
-
 export const state = stream.of(initialState);
+
+// Update for each beat
+//  move player forward
+//  update player tetronimo
+//  remove old tetronimos
+stream.on(beat => {
+  const s = state();
+  state({
+    ...s,
+    currentBeat: beat,
+    tetronimoes: s.tetronimoes
+      .map(ts =>
+        ts.type === 'player'
+          ? {
+              ...ts,
+              beat,
+              // kind of hacky update to shape
+              tetronimo: s.tetronimoes[s.tetronimoes.length - 1].tetronimo,
+            }
+          : ts
+      )
+      .filter(ts => ts.beat >= beat),
+  });
+}, currentBeat);
+
+// On downbeats, generate a new hole
+stream.on(() => {
+  if (currentBeat() === 0) return;
+  const s = state();
+  state({
+    ...s,
+    tetronimoes: [
+      ...s.tetronimoes,
+      randomTetronimoState({ type: 'hole', beat: currentBeat() + 8 }),
+    ],
+  });
+}, downbeats);
+
+// Every downbeat we check wall collision
+export const wallCollisions = filter(
+  Boolean,
+  streamSample(
+    state.map(s => {
+      const player = s.tetronimoes[0];
+      const hole = s.tetronimoes[1];
+      const collided =
+        currentBeat() > 0 && player && hole && !doesOverlap(player, hole);
+      return collided;
+    }),
+    downbeats
+  )
+).map(log('collision'));
 
 export const rotateTetronimo = (state: State, direction: number): State => ({
   ...state,
