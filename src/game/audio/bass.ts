@@ -12,6 +12,10 @@ const monoBassSynth = () => {
     'square',
     'triangle',
     'sawtooth',
+    'fatsawtooth',
+    'fattriangle',
+    'fmsawtooth',
+    'fmtriangle',
   ]);
   bass.envelope.set({
     attack: sample([0.01, '8n']),

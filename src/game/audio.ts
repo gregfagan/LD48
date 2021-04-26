@@ -37,10 +37,24 @@ const drumLoop = new Tone.Sequence(
   (time, note) => {
     drumSynth.triggerAttackRelease(note, '4n', time);
   },
-  ['C1', 'C1', 'C1', 'C1', 'C1', 'C1', 'C1', ['C1', 'C1', 'C1']]
+  ['C1', 'C1', 'C1', ['C1', 'C1'], 'C1', 'C1', 'C1', ['C1', 'C1', 'C1']]
 );
 drumLoop.loop = true;
 drumLoop.playbackRate = 0.5;
+
+const hatGain = addMixer(gui, 'Hats', 0.2);
+const hatSynth = new Tone.NoiseSynth().connect(hatGain);
+const hatLoop = new Tone.Sequence(
+  (time, note) => {
+    hatSynth.triggerAttackRelease('32n', time);
+  },
+  ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', ['C4', 'C4'], ['C4', 'C4', 'C4']]
+);
+hatLoop.loop = true;
+
+Tone.Transport.scheduleRepeat(() => {
+  hatSynth.volume.set({ value: sample([-60, -6]) });
+}, '4m');
 
 // const patterns = [
 //   ['E3', 'Gb3', 'A4', 'Gb4', 'A4', 'Gb3', 'B4', 'B3'],
@@ -87,6 +101,7 @@ const patterns = [
 const arpGain = addMixer(gui, 'arp');
 const arpDelay = new Tone.PingPongDelay('16n').connect(arpGain);
 const delayLFO = new Tone.LFO('4m', 0, 1).connect(arpDelay.wet);
+delayLFO.start(0);
 const arp = generateBassSynth().connect(arpDelay);
 const arpPattern = new Tone.Pattern(
   (time, note) => {
@@ -94,9 +109,9 @@ const arpPattern = new Tone.Pattern(
     arp.triggerAttackRelease(note, duration, time);
   },
   sample(patterns),
-  'up'
+  sample(['up', 'upDown'])
 );
-arpPattern.playbackRate = 2;
+arpPattern.playbackRate = sample([1, 2, 4]);
 
 Tone.Transport.scheduleRepeat(() => {
   arpPattern.values = sample(patterns);
@@ -109,7 +124,7 @@ const bassPattern = new Tone.Pattern(
     bass.triggerAttackRelease(note, '2n', time);
   },
   generatePatterns(scale, 1, 2, 4),
-  'upDown'
+  sample(['up', 'upDown'])
 );
 bassPattern.playbackRate = 0.5;
 
@@ -118,6 +133,7 @@ export const start = async () => {
     drumLoop.start(0);
     bassPattern.start(0);
     arpPattern.start(0);
+    hatLoop.start(0);
   });
 };
 
