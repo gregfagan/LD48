@@ -4,6 +4,7 @@ import { stream } from './lib/stream';
 import { clock, gui } from './game/util';
 import { draw } from './game';
 import { keypress } from './lib/stream/dom';
+import { resize } from './game/ui';
 
 const regl = REGL();
 const stats = new Stats();
@@ -27,3 +28,8 @@ stream.on(() => {
   render();
   stats.update();
 }, clock);
+
+const ro = new ResizeObserver(([entry]) => {
+  resize(entry.contentRect);
+});
+ro.observe(regl._gl.canvas);

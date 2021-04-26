@@ -9,14 +9,15 @@ import {
   Down,
   moveTetronimo,
   rotateTetronimo,
-  generateInitialState,
+  generateNewState,
   stepState,
-  addHole,
   isGameRunning,
   wallCollisions,
+  initialMovement,
 } from './state';
 import { event, filter, log, stream } from '../lib/stream';
 export { draw } from './render';
+import './ui';
 
 // This stream "debounces" the end of the game so that if the
 // player is mashing the buttons, they don't immediately skip
@@ -27,12 +28,15 @@ stream.on(() => {
   setTimeout(() => canStartNewGame(true), 750);
 }, wallCollisions);
 
-const startNewGame = () => {
-  isGameRunning(true);
-  if (state().currentBeat !== 0) {
-    BPM(100);
-    state(generateInitialState());
+const startNewGame = (pressedKey: string) => {
+  if (state().currentBeat > 0) {
+    state(generateNewState());
+    isGameRunning(true);
+  } else if (pressedKey === initialMovement) {
+    isGameRunning(true);
   }
+
+  if (isGameRunning()) BPM(100);
 };
 
 // Respond to the main controls
@@ -45,10 +49,12 @@ const startNewGame = () => {
   keypress('e'),
 ]
   .reduce(stream.merge)
-  .map(() => {
+  .map(({ key }) => {
     if (!isGameRunning()) {
-      if (canStartNewGame()) startNewGame();
-    } else {
+      if (canStartNewGame()) startNewGame(key);
+    }
+
+    if (isGameRunning()) {
       playSound();
       const key = keys();
       if (key.a) state(moveTetronimo(state(), Left));

@@ -12,11 +12,36 @@ import { Vec2 } from 'regl';
 import { filter, log, stream } from '../lib/stream';
 import { sample } from './util';
 import { isDownbeat, isPhrase, BPM } from './audio';
+import { randomInt } from 'fp-ts/lib/Random';
+
+// export const isDownbeat = (beat: number) => beat % 8 === 0;
 
 export const Left: Vec2 = vec2.of(-1, 0);
 export const Right: Vec2 = vec2.of(1, 0);
 export const Up: Vec2 = vec2.of(0, -1);
 export const Down: Vec2 = vec2.of(0, 1);
+
+export const rotateTetronimo = (state: State, direction: number): State => ({
+  ...state,
+  tetronimoes: state.tetronimoes.map(ts =>
+    // Don't rotate Os, they're fully symmetric
+    ts.type === 'player' && ts.tetronimo !== O
+      ? moveInBounds({
+          ...ts,
+          rotation: (ts.rotation - direction + 4) % 4,
+        } as TetronimoState)
+      : ts
+  ),
+});
+
+export const moveTetronimo = (state: State, direction: Vec2): State => ({
+  ...state,
+  tetronimoes: state.tetronimoes.map(ts =>
+    ts.type === 'player'
+      ? moveInBounds({ ...ts, position: vec2.add(ts.position, direction) })
+      : ts
+  ),
+});
 
 export type TetronimoState = {
   tetronimo: Tetronimo;
@@ -26,12 +51,12 @@ export type TetronimoState = {
   beat: number;
 };
 
-type State = {
+export type State = {
   tetronimoes: TetronimoState[];
   currentBeat: number;
 };
 
-const randomTetronimoState = ({
+export const randomTetronimoState = ({
   beat = 0,
   type = 'hole',
   tetronimo = sample(tetronimoes),
@@ -46,7 +71,38 @@ const randomTetronimoState = ({
     beat,
   });
 
-export const generateInitialState = (beat = 0): State => {
+const startingBeat = -1;
+const initialTetronimoState = randomTetronimoState({
+  type: 'player',
+  beat: startingBeat,
+  tetronimo: sample(tetronimoes.filter(x => x !== 'O')),
+  position: vec2.of(randomInt(3, 12)(), randomInt(8, 12)()),
+});
+
+const initialState = {
+  tetronimoes: [initialTetronimoState],
+  currentBeat: startingBeat,
+};
+
+const initialHoleLocation = sample([
+  ['a', moveTetronimo(initialState, Left)] as const,
+  ['d', moveTetronimo(initialState, Right)] as const,
+  ['w', moveTetronimo(initialState, Up)] as const,
+  ['s', moveTetronimo(initialState, Down)] as const,
+  ['e', rotateTetronimo(initialState, 1)] as const,
+  ['q', rotateTetronimo(initialState, -1)] as const,
+] as const);
+
+const initHole = initialHoleLocation[1];
+
+initialState.tetronimoes.push({
+  ...initialTetronimoState,
+  ...initHole.tetronimoes[0],
+  type: 'hole',
+  beat: 0,
+});
+
+export const generateNewState = (beat = 0): State => {
   const initialTetronimoState = randomTetronimoState({
     type: 'player',
     beat,
@@ -63,7 +119,9 @@ export const generateInitialState = (beat = 0): State => {
   };
 };
 
-export const state = stream.of(generateInitialState());
+const initialMovement = initialHoleLocation[0];
+export { initialMovement };
+export const state = stream.of<State>(initialState);
 export const isGameRunning = stream.of<boolean>(false);
 
 // Update for each beat
@@ -101,7 +159,7 @@ export const stepState = (s: State, beat: number): State => {
 };
 
 export const addHole = (s: State, beat: number): State => {
-  if (beat === 0) return s;
+  // if (beat === 0) return s;
   return {
     ...s,
     tetronimoes: [
@@ -128,25 +186,3 @@ export const wallCollisions = filter(
 );
 
 stream.on(() => isGameRunning(false), wallCollisions);
-
-export const rotateTetronimo = (state: State, direction: number): State => ({
-  ...state,
-  tetronimoes: state.tetronimoes.map(ts =>
-    // Don't rotate Os, they're fully symmetric
-    ts.type === 'player' && ts.tetronimo !== O
-      ? moveInBounds({
-          ...ts,
-          rotation: (ts.rotation - direction + 4) % 4,
-        } as TetronimoState)
-      : ts
-  ),
-});
-
-export const moveTetronimo = (state: State, direction: Vec2): State => ({
-  ...state,
-  tetronimoes: state.tetronimoes.map(ts =>
-    ts.type === 'player'
-      ? moveInBounds({ ...ts, position: vec2.add(ts.position, direction) })
-      : ts
-  ),
-});
