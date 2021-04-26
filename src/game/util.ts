@@ -50,3 +50,7 @@ export const sample = <T>(array: T[]): T => {
   const index = Math.floor(Math.random() * array.length);
   return array[index];
 };
+
+export const range = (min: number, max: number): number => {
+  return Math.random() * (max - min) + min;
+};
