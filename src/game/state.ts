@@ -11,10 +11,10 @@ import { vec2 } from '../lib/math';
 import { Vec2 } from 'regl';
 import { filter, log, stream } from '../lib/stream';
 import { sample } from './util';
-import { isDownbeat, isPhrase, BPM } from './audio';
+import { isPhrase, BPM } from './audio';
 import { randomInt } from 'fp-ts/lib/Random';
 
-// export const isDownbeat = (beat: number) => beat % 8 === 0;
+export const isDownbeat = (beat: number) => beat % 8 === 0;
 
 export const Left: Vec2 = vec2.of(-1, 0);
 export const Right: Vec2 = vec2.of(1, 0);
@@ -25,7 +25,7 @@ export const rotateTetronimo = (state: State, direction: number): State => ({
   ...state,
   tetronimoes: state.tetronimoes.map(ts =>
     // Don't rotate Os, they're fully symmetric
-    ts.type === 'player' && ts.tetronimo !== O
+    ts.type === 'player' && ts.tetronimo !== O && !isDownbeat(state.currentBeat)
       ? moveInBounds({
           ...ts,
           rotation: (ts.rotation - direction + 4) % 4,
@@ -37,7 +37,7 @@ export const rotateTetronimo = (state: State, direction: number): State => ({
 export const moveTetronimo = (state: State, direction: Vec2): State => ({
   ...state,
   tetronimoes: state.tetronimoes.map(ts =>
-    ts.type === 'player'
+    ts.type === 'player' && !isDownbeat(state.currentBeat)
       ? moveInBounds({ ...ts, position: vec2.add(ts.position, direction) })
       : ts
   ),

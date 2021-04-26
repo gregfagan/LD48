@@ -1,4 +1,4 @@
-import { keys, pause } from './util';
+import { clock, keys, pause } from './util';
 import { keypress } from '../lib/stream/dom';
 import { playSound, currentBeat, initializeAudio, BPM } from './audio';
 import {
@@ -15,9 +15,19 @@ import {
   wallCollisions,
   initialMovement,
 } from './state';
-import { event, filter, log, stream } from '../lib/stream';
+import {
+  dropRepeats,
+  event,
+  everyNth,
+  filter,
+  log,
+  sample,
+  stream,
+} from '../lib/stream';
 export { draw } from './render';
 import './ui';
+import { beatTime } from './audio/util';
+import { not } from 'ramda';
 
 let destroyAudio: Function;
 // This stream "debounces" the end of the game so that if the
@@ -38,6 +48,7 @@ const startNewGame = (pressedKey: string) => {
   } else if (pressedKey === initialMovement) {
     isGameRunning(true);
     destroyAudio = initializeAudio();
+    move();
   }
 
   if (isGameRunning()) BPM(100);
@@ -58,17 +69,47 @@ const startNewGame = (pressedKey: string) => {
       if (canStartNewGame()) startNewGame(key);
     }
 
-    if (isGameRunning()) {
+    if (isGameRunning() && (key === 'q' || key === 'e')) {
       playSound();
-      const key = keys();
-      if (key.a) state(moveTetronimo(state(), Left));
-      if (key.s) state(moveTetronimo(state(), Down));
-      if (key.d) state(moveTetronimo(state(), Right));
-      if (key.w) state(moveTetronimo(state(), Up));
-      if (key.e) state(rotateTetronimo(state(), 1));
-      if (key.q) state(rotateTetronimo(state(), -1));
+      if (key === 'e') state(rotateTetronimo(state(), 1));
+      if (key === 'q') state(rotateTetronimo(state(), -1));
     }
   });
+
+const noRepeatKeydowns = ['a', 's', 'd', 'w']
+  .map(key => filter(Boolean, dropRepeats(keys.map(m => m[key]))))
+  .reduce(stream.merge);
+
+const allKeysOff = dropRepeats(
+  keys.map(m => m.a || m.s || m.d || m.w).map(not)
+);
+
+const repeating = stream.combine(
+  (down, up, self, changed) => {
+    if (changed.includes(down)) return true;
+    if (changed.includes(up)) return false;
+  },
+  [noRepeatKeydowns, allKeysOff]
+);
+const repeat = sample(keys, everyNth(4)(clock));
+
+const delayedRepeating = filter(
+  (total: number) => total > 1,
+  stream.scan(total => (repeating() ? total + 1 : 0), 0, repeat)
+);
+
+const move = () => {
+  if (!isGameRunning()) return;
+  playSound();
+  const key = keys();
+  if (key.a) state(moveTetronimo(state(), Left));
+  if (key.s) state(moveTetronimo(state(), Down));
+  if (key.d) state(moveTetronimo(state(), Right));
+  if (key.w) state(moveTetronimo(state(), Up));
+};
+
+stream.on(move, noRepeatKeydowns);
+stream.on(move, delayedRepeating);
 
 // Update game, but only when it's running, on the current beat.
 stream.on(
