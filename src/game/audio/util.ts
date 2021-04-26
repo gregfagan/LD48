@@ -3,6 +3,14 @@ import { stream } from '../../lib/stream';
 import { AutoGUI } from '../../lib/gui';
 import { sample } from '../util';
 
+export const beatTime = stream.of(0);
+
+Tone.Transport.scheduleRepeat(time => {
+  Tone.Draw.schedule(() => {
+    beatTime((Tone.Transport.ticks / Tone.Transport.PPQ) % 1);
+  }, time);
+}, '64n');
+
 type Note =
   | 'C'
   | 'C#'
@@ -39,6 +47,12 @@ export const generateScale = () => {
   return scale;
 };
 
+const rhythmPatterns = [
+  [1],
+  // [1, 0],
+  // [1, 1, 0, 0]
+];
+
 export const generatePatterns = (
   scale,
   octaveMin = 3,
@@ -46,9 +60,12 @@ export const generatePatterns = (
   length = 16
 ) => {
   const pattern = [];
+  const rhythmPattern = sample(rhythmPatterns);
   for (let i = 0; i < length; i++) {
-    const newVal = `${sample(scale)}${sample([octaveMin, octaveMax])}`;
-    pattern.push(sample([newVal, newVal, newVal, null]));
+    const newVal = rhythmPattern[i % rhythmPattern.length]
+      ? `${sample(scale)}${sample([octaveMin, octaveMax])}`
+      : null;
+    pattern.push(newVal);
   }
   return pattern;
 };
