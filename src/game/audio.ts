@@ -50,14 +50,6 @@ drumLoop.playbackRate = 0.5;
 //   ['Db3', 'Db3', 'E4', 'E4', 'Eb4', 'B4', 'E3', 'B3'],
 // ];
 
-const patterns = [
-  generatePatterns(scale),
-  generatePatterns(scale),
-  generatePatterns(scale),
-  generatePatterns(scale),
-  generatePatterns(scale),
-];
-
 const effectMixer = addMixer(gui, 'effect', 0.4);
 const effectReverb = new Tone.Reverb(0.5).connect(effectMixer);
 effectReverb.set({
@@ -83,6 +75,14 @@ const effectPattern = generatePatterns(scale, 5, 6);
 export const playSound = () => {
   effectSynth.triggerAttackRelease(sample(effectPattern), '16n', Tone.now());
 };
+
+const patterns = [
+  generatePatterns(scale, 4, 5),
+  generatePatterns(scale, 4, 4),
+  generatePatterns(scale, 4, 5),
+  generatePatterns(scale, 3, 5),
+  generatePatterns(scale, 3, 6),
+];
 
 const arpGain = addMixer(gui, 'arp');
 const arpDelay = new Tone.PingPongDelay('16n').connect(arpGain);
