@@ -11,6 +11,8 @@ Tone.Transport.scheduleRepeat(time => {
   }, time);
 }, '64n');
 
+export const currentBeatTime = () => Tone.Transport.ticks / Tone.Transport.PPQ;
+
 type Note =
   | 'C'
   | 'C#'

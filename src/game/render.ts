@@ -7,6 +7,7 @@ import { sdf } from '../lib/gl/config/sdf';
 import { glsl, uniform } from '../lib/gl/regl';
 import { vec2 } from '../lib/math';
 import { log, stream, Stream } from '../lib/stream';
+import { beatTime, currentBeatTime } from './audio/util';
 import { width } from './board';
 import { state } from './state';
 import { BlockPositions, Tetronimo, transform } from './tetronimoes';
@@ -100,6 +101,9 @@ export const draw = glsl`
 
     #define numShapes ${numShapesToRender}
     #define numBeats ${numShapesToRender}.
+    #define beatRatio 1.
+    #define beatTime ${uniform(currentBeatTime)}
+    #define phraseTime (floor(mod(beatTime - 1., 8.))/8.)
 
     #define board vec2(${width})
     #define halfBoard (board/2.)
@@ -114,7 +118,8 @@ export const draw = glsl`
     }
 
     float fadeToBeat(float beat) {
-      return 1. - 0.8 * (beat / numBeats);
+      float myDistance = beat / (numBeats - 1.);
+      return 1. - 0.8 * myDistance;
     }
 
     float sdEdges(vec2 p) {
@@ -147,7 +152,7 @@ export const draw = glsl`
     vec4 colorShape(vec2 p, Shape s) {
       // first, get the opacity of this shape
       float alpha = step(sdShape(scaleToBeat(p, s.beat), s), 0.);
-      if (s.invert) alpha *= 0.98;
+      if (s.invert) alpha *= 0.90;
 
       // next, loop through all the shapes to see if there is another one
       // closer to the camera which is also opaque at this location.
@@ -162,11 +167,20 @@ export const draw = glsl`
       }
 
       vec3 color = vec3(s.color) * fadeToBeat(s.beat) - shadow;
+      
+      // float bt = mod(beatTime - 1., 8.) - 7.;
+      // bt = normalized(bt);
+      // float btAlpha = sdShape(p, s) - 1.;
+      // bt *= btAlpha;
+      // bt = normalized(bt);
+      // if (s.invert) color = mix(color, shapes[0].color, bt);
+
       return vec4(color, alpha);
     }
 
     void main() {
       vec2 p = st();
+      // p /= 1.+ fract(beatTime)* beatScale;
       p *= 1.2;             // global zoom out
       p *= vec2(1, -1);     // flip Y so 0 is top left
       p = p / 2. + 0.5;     // move origin to top left
@@ -174,11 +188,25 @@ export const draw = glsl`
 
       vec4 color = vec4(0, 0, 0, 0);
 
+      // beat borders
       for (float i = numBeats - 1.; i >= 0.; i--) {
+        float bt = 1. - fract(beatTime);
+        bt *= 7.;
+        bt = i - bt;
+        bt = abs(bt);
+        bt = normalized(bt);
+        bt = 1. - bt;
+        
+        if (i == 0.) bt = max(bt, phraseTime);
+
         vec2 pEdge = scaleToBeat(p, i);
         float edges = sdEdges(pEdge);
         edges = step(abs(edges), 0.15);
-        color = mix(color, vec4(fadeToBeat(i)), edges);
+
+        vec3 edgeColor = vec3(fadeToBeat(i));
+        edgeColor = mix(edgeColor, shapes[0].color, bt);
+
+        color = mix(color, vec4(edgeColor, 1.), edges);
       }
 
       for (int i = numShapes - 1; i >= 0; i--) {
