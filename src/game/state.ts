@@ -11,7 +11,7 @@ import { vec2 } from '../lib/math';
 import { Vec2 } from 'regl';
 import { filter, log, stream } from '../lib/stream';
 import { sample } from './util';
-import { isPhrase, BPM } from './audio';
+import { isPhrase, BPM, playGoodJobSound } from './audio';
 import { randomInt } from 'fp-ts/lib/Random';
 
 export const isDownbeat = (beat: number) => beat % 8 === 0;
@@ -147,6 +147,7 @@ export const stepState = (s: State, beat: number): State => {
   };
 
   if (isDownbeat(beat)) {
+    playGoodJobSound();
     newState = addHole(newState, beat);
   }
 

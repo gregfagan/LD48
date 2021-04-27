@@ -5,6 +5,7 @@ import { sample } from './util';
 import { addMixer, generateScale, generatePatterns } from './audio/util';
 import { monoBassSynth } from './audio/bass';
 import { isGameRunning } from './state';
+import { PolySynth } from 'tone';
 const gui = baseGui.addFolder('audio');
 
 export const BPM = gui.auto(100, 'BPM', 60, 240);
@@ -33,21 +34,37 @@ stream.on(pauseState => {
   }
 }, isAudioPaused);
 
-const effectMixer = addMixer(gui, 'effect', 0.4);
-const effectReverb = new Tone.Reverb(0.5).connect(effectMixer);
-effectReverb.set({
-  wet: 0.5,
-});
-const effectDelay = new Tone.PingPongDelay('16n', 0.2).connect(effectReverb);
-effectDelay.set({
-  wet: 0.5,
-});
-const effectSynth = new Tone.PolySynth().connect(effectDelay);
-
-const effectPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
+const effectGain = addMixer(gui, 'effect', -12);
+const effectSynth = new Tone.PolySynth().connect(effectGain);
+let effectPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
 
 export const playSound = () => {
   effectSynth.triggerAttackRelease(sample(effectPattern), '16n');
+};
+
+const goodJobGain = addMixer(gui, 'good job', -13);
+const goodJobDelay = new Tone.PingPongDelay('32n', 0.7).connect(goodJobGain);
+goodJobDelay.set({
+  wet: 1,
+});
+const goodJobSynth = new Tone.PolySynth(Tone.MonoSynth, {
+  oscillator: { type: 'sine' },
+  envelope: {
+    attack: 0,
+    release: 0.7,
+  },
+  filterEnvelope: {
+    attack: 0,
+  },
+  detune: 3,
+}).connect(goodJobDelay);
+let goodJobPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
+let goodJobPattern2 = generatePatterns(scale, 3, 4, 3).filter(note => note);
+export const playGoodJobSound = () => {
+  goodJobSynth.triggerAttackRelease(
+    [sample(goodJobPattern), sample(goodJobPattern2)],
+    '8n'
+  );
 };
 
 /**
@@ -57,11 +74,14 @@ export const playSound = () => {
 
 export const initializeAudio = () => {
   scale = generateScale();
+  effectPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
+  goodJobPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
+  goodJobPattern2 = generatePatterns(scale, 3, 4, 3).filter(note => note);
 
   /**
    * Setup Drums
    */
-  const drumGain = addMixer(gui, 'Drums', 0.4);
+  const drumGain = addMixer(gui, 'Drums', -14);
   const distortion = new Tone.Distortion(4.2).connect(drumGain);
   const drumSynth = new Tone.MembraneSynth().connect(distortion);
   const drumLoop = new Tone.Sequence(
@@ -73,7 +93,7 @@ export const initializeAudio = () => {
   drumLoop.loop = true;
   drumLoop.playbackRate = 0.5;
 
-  const hatGain = addMixer(gui, 'Hats', 0.2);
+  const hatGain = addMixer(gui, 'Hats', -14);
   const hatSynth = new Tone.NoiseSynth().connect(hatGain);
   const hatLoop = new Tone.Sequence(
     (time, note) => {
@@ -98,7 +118,7 @@ export const initializeAudio = () => {
     generatePatterns(scale, 3, 6),
   ];
 
-  const arpGain = addMixer(gui, 'arp');
+  const arpGain = addMixer(gui, 'arp', -19);
   const arpDelay = new Tone.PingPongDelay('16n').connect(arpGain);
   const delayLFO = new Tone.LFO('4m', 0.25, 0.5).connect(arpDelay.wet);
   delayLFO.start(0);
@@ -121,7 +141,7 @@ export const initializeAudio = () => {
    * Setup Bass
    */
 
-  const bassGain = addMixer(gui, 'bass', 0.5);
+  const bassGain = addMixer(gui, 'bass', -15);
   const bass = monoBassSynth().connect(bassGain);
   const bassPattern = new Tone.Pattern(
     (time, note) => {

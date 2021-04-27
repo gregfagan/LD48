@@ -73,10 +73,10 @@ export const generatePatterns = (
 export const addMixer = (
   gui: AutoGUI,
   name: string,
-  defaultValue = 0.2
-): Tone.Gain => {
-  const gainNode = new Tone.Gain().toDestination();
-  const value = gui.auto(defaultValue, name, 0, 1);
-  stream.on((val: number) => gainNode.set({ gain: val }), value);
-  return gainNode;
+  defaultValue = -12
+): Tone.Volume => {
+  const volumeNode = new Tone.Volume().toDestination();
+  const value = gui.auto(defaultValue, name, -30, -3);
+  stream.on((val: number) => volumeNode.set({ volume: val }), value);
+  return volumeNode;
 };
