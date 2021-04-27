@@ -1,2 +1,2 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ base: '/LD48/' });
+export default defineConfig({ base: '/tetronimo/' });
