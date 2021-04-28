@@ -1,4 +1,4 @@
-import { clock, keys, pause } from './util';
+import { clock, dt, keys, pause } from './util';
 import { keypress } from '../lib/stream/dom';
 import { playSound, currentBeat, initializeAudio, BPM } from './audio';
 import {
@@ -91,7 +91,21 @@ const repeating = stream.combine(
   },
   [noRepeatKeydowns, allKeysOff]
 );
-const repeat = sample(keys, everyNth(4)(clock));
+
+const repeatTime = 4 / 60;
+let repeatTimeCount = 0;
+const repeatTick = stream.combine(
+  dt => {
+    repeatTimeCount += dt();
+    if (repeatTimeCount > repeatTime) {
+      repeatTimeCount -= repeatTime;
+      return true;
+    }
+  },
+  [dt]
+);
+
+const repeat = sample(keys, repeatTick);
 
 const delayedRepeating = filter(
   (total: number) => total > 1,
