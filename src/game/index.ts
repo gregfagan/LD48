@@ -92,18 +92,22 @@ const repeating = stream.combine(
   [noRepeatKeydowns, allKeysOff]
 );
 
-const repeatTime = 4 / 60;
+const repeatTime = (4 * 1000) / 60;
 let repeatTimeCount = 0;
-const repeatTick = stream.combine(
-  dt => {
-    repeatTimeCount += dt();
-    if (repeatTimeCount > repeatTime) {
-      repeatTimeCount -= repeatTime;
-      return true;
-    }
-  },
-  [dt]
-);
+let lastTime = performance.now();
+const repeatTick = stream.of();
+const repeatRAF: FrameRequestCallback = t => {
+  const dt = t - lastTime;
+  lastTime = t;
+  repeatTimeCount += dt;
+  if (repeatTimeCount > repeatTime) {
+    repeatTimeCount -= repeatTime;
+    repeatTick(true);
+  }
+
+  requestAnimationFrame(repeatRAF);
+};
+repeatRAF(performance.now());
 
 const repeat = sample(keys, repeatTick);
 
