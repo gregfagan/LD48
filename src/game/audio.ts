@@ -2,7 +2,12 @@ import { gui as baseGui, pause } from './util';
 import * as Tone from 'tone';
 import { stream, filter, event } from '../lib/stream';
 import { sample } from './util';
-import { addMixer, generateScale, generatePatterns } from './audio/util';
+import {
+  addMixer,
+  generateScale,
+  generatePatterns,
+  startBeatTime,
+} from './audio/util';
 import { monoBassSynth } from './audio/bass';
 import { isGameRunning } from './state';
 import { PolySynth } from 'tone';
@@ -12,9 +17,12 @@ export const BPM = gui.auto(100, 'BPM', 60, 240);
 let scale = generateScale();
 
 export const currentBeat = stream.of(0);
-Tone.Transport.scheduleRepeat(() => {
-  currentBeat(currentBeat() + 1);
-}, '4n');
+
+const startBeatCount = () => {
+  Tone.Transport.scheduleRepeat(() => {
+    currentBeat(currentBeat() + 1);
+  }, '4n');
+};
 export const isDownbeat = (beat: number) => beat % 8 === 0;
 export const isPhrase = (beat: number) => beat % 32 === 0;
 export const downbeats = filter(Boolean, currentBeat.map(isDownbeat));
@@ -26,7 +34,8 @@ const isAudioPaused = stream.combine(
   [pause, isGameRunning]
 );
 
-stream.on(pauseState => {
+stream.on(async pauseState => {
+  await Tone.start();
   if (pauseState) {
     Tone.Transport.pause(Tone.now());
   } else {
@@ -39,7 +48,9 @@ const effectSynth = new Tone.PolySynth().connect(effectGain);
 let effectPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
 
 export const playSound = () => {
-  effectSynth.triggerAttackRelease(sample(effectPattern), '16n');
+  if (Tone.context.state === 'running') {
+    effectSynth.triggerAttackRelease(sample(effectPattern), '16n');
+  }
 };
 
 const goodJobGain = addMixer(gui, 'good job', -13);
@@ -61,10 +72,12 @@ const goodJobSynth = new Tone.PolySynth(Tone.MonoSynth, {
 let goodJobPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
 let goodJobPattern2 = generatePatterns(scale, 3, 4, 3).filter(note => note);
 export const playGoodJobSound = () => {
-  goodJobSynth.triggerAttackRelease(
-    [sample(goodJobPattern), sample(goodJobPattern2)],
-    '8n'
-  );
+  if (Tone.context.state === 'running') {
+    goodJobSynth.triggerAttackRelease(
+      [sample(goodJobPattern), sample(goodJobPattern2)],
+      '8n'
+    );
+  }
 };
 
 /**
@@ -72,7 +85,8 @@ export const playGoodJobSound = () => {
  * Make Audio Go.
  */
 
-export const initializeAudio = () => {
+export const initializeAudio = async () => {
+  await Tone.start();
   scale = generateScale();
   effectPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
   goodJobPattern = generatePatterns(scale, 5, 6, 3).filter(note => note);
@@ -119,7 +133,7 @@ export const initializeAudio = () => {
   ];
 
   const arpGain = addMixer(gui, 'arp', -19);
-  const arpDelay = new Tone.PingPongDelay('16n').connect(arpGain);
+  const arpDelay = new Tone.FeedbackDelay('16n').connect(arpGain);
   const delayLFO = new Tone.LFO('4m', 0.25, 0.5).connect(arpDelay.wet);
   delayLFO.start(0);
   const arp = monoBassSynth().connect(arpDelay);
@@ -171,7 +185,9 @@ export const initializeAudio = () => {
 };
 
 export const start = async () => {
-  Tone.start();
+  await Tone.start();
+  startBeatCount();
+  startBeatTime();
 };
 
 // Start audio on the first keydown event

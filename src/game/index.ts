@@ -40,14 +40,14 @@ stream.on(() => {
   setTimeout(() => canStartNewGame(true), 750);
 }, wallCollisions);
 
-const startNewGame = (pressedKey: string) => {
+const startNewGame = async (pressedKey: string) => {
   if (state().currentBeat > 0) {
     state(generateNewState());
     isGameRunning(true);
-    destroyAudio = initializeAudio();
+    destroyAudio = await initializeAudio();
   } else if (pressedKey === initialMovement) {
     isGameRunning(true);
-    destroyAudio = initializeAudio();
+    destroyAudio = await initializeAudio();
     move();
   }
 

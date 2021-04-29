@@ -5,11 +5,13 @@ import { sample } from '../util';
 
 export const beatTime = stream.of(0);
 
-Tone.Transport.scheduleRepeat(time => {
-  Tone.Draw.schedule(() => {
-    beatTime((Tone.Transport.ticks / Tone.Transport.PPQ) % 1);
-  }, time);
-}, '64n');
+export const startBeatTime = () => {
+  Tone.Transport.scheduleRepeat(time => {
+    Tone.Draw.schedule(() => {
+      beatTime((Tone.Transport.ticks / Tone.Transport.PPQ) % 1);
+    }, time);
+  }, '64n');
+};
 
 export const currentBeatTime = () => Tone.Transport.ticks / Tone.Transport.PPQ;
 
