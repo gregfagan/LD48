@@ -54,19 +54,17 @@ const constantLength = (shapes: Shape[]) => {
 };
 const u = state
   .map(s => {
-    const shapes = takeLeft(8)(s.tetronimoes).map(
-      (shape): Shape => {
-        const isHole = shape.type === 'hole';
-        const color: Vec3 = isHole ? [1, 1, 1] : colors[shape.tetronimo]();
-        return {
-          blocks: transform(shape),
-          color,
-          beat: shape.beat - s.currentBeat,
-          active: true,
-          invert: isHole,
-        };
-      }
-    );
+    const shapes = takeLeft(8)(s.tetronimoes).map((shape): Shape => {
+      const isHole = shape.type === 'hole';
+      const color: Vec3 = isHole ? [1, 1, 1] : colors[shape.tetronimo]();
+      return {
+        blocks: transform(shape),
+        color,
+        beat: shape.beat - s.currentBeat,
+        active: true,
+        invert: isHole,
+      };
+    });
 
     return shapes;
   })
@@ -88,6 +86,11 @@ export const draw = glsl`
     ${quad}
     ${sdf}
     ${{ uniforms, depth: { enable: false } }}
+
+    #define MAX_STEPS 100
+    #define MAX_DIST 100.
+    #define SURFACE_DIST 0.01
+
     struct Shape {
       vec2 a;
       vec2 b;
@@ -99,124 +102,59 @@ export const draw = glsl`
       bool invert;
     };
 
-    #define numShapes ${numShapesToRender}
-    #define numBeats ${numShapesToRender}.
-    #define beatRatio 1.
-    #define beatTime ${uniform(currentBeatTime)}
-    #define phraseTime (floor(mod(beatTime - 1., 8.))/8.)
-
-    #define board vec2(${width})
-    #define halfBoard (board/2.)
-
-    uniform Shape shapes[numShapes];
-
-    vec2 scaleToBeat(vec2 p, float beat) {
-      p -= halfBoard;
-      p *= (1. + beat * ${uniform(gui.auto(0.2, 'beatScale', 0.1, 1))});
-      p += halfBoard;
-      return p;
+    // distance from a point to the scene
+    float scene(vec3 point) {
+      vec3 spherePos = vec3(0, 1, 6);
+      float sphereDist = length(point - spherePos) - 1.;
+      float floorDist = point.y;
+      return min(sphereDist, floorDist);
     }
 
-    float fadeToBeat(float beat) {
-      float myDistance = beat / (numBeats - 1.);
-      return 1. - 0.8 * myDistance;
-    }
+    float rayMarch(vec3 origin, vec3 direction) {
+      float distanceFromOrigin = 0.;
 
-    float sdEdges(vec2 p) {
-      // centered box with half edge of 8
-      return sdBox(p - halfBoard, halfBoard) - 0.15;
-    }
-
-    float sdBlock(vec2 p, vec2 b) {
-      vec2 blockP = b + vec2(0.5);
-      return sdBox(p - blockP, vec2(0.5));
-    }
-
-    float sdShape(vec2 p, Shape s) {
-      float d = INFINITY;
-      
-      float k = 0.01;
-      d = opSmoothUnion(d, sdBlock(p, s.a), k);
-      d = opSmoothUnion(d, sdBlock(p, s.b), k);
-      d = opSmoothUnion(d, sdBlock(p, s.c), k);
-      d = opSmoothUnion(d, sdBlock(p, s.d), k);
-
-      d = s.invert ? -d : d;
-
-      // crop to board
-      d = max(sdEdges(p), d);
-
-      return d;
-    }
-
-    vec4 colorShape(vec2 p, Shape s) {
-      // first, get the opacity of this shape
-      float alpha = step(sdShape(scaleToBeat(p, s.beat), s), 0.);
-      if (s.invert) alpha *= 0.90;
-
-      // next, loop through all the shapes to see if there is another one
-      // closer to the camera which is also opaque at this location.
-      float shadow = 0.;
-      for (int i = 0; i < numShapes; i++) {
-        Shape otherShape = shapes[i];
-        if (otherShape.active && otherShape.beat < s.beat) {
-          // when checking the other shape, project it onto this shape's beat
-          float d = step(sdShape(scaleToBeat(p, s.beat), otherShape), 0.);
-          if (d > 0.) { shadow = 0.1; break; }
-        }
+      for (int i = 0; i < MAX_STEPS; i++) {
+        vec3 point = origin + distanceFromOrigin * direction;
+        float distanceToScene = scene(point);
+        distanceFromOrigin += distanceToScene;
+        if (distanceToScene < SURFACE_DIST || distanceFromOrigin > MAX_DIST)
+          break;
       }
 
-      vec3 color = vec3(s.color) * fadeToBeat(s.beat) - shadow;
-      
-      // float bt = mod(beatTime - 1., 8.) - 7.;
-      // bt = normalized(bt);
-      // float btAlpha = sdShape(p, s) - 1.;
-      // bt *= btAlpha;
-      // bt = normalized(bt);
-      // if (s.invert) color = mix(color, shapes[0].color, bt);
+      return distanceFromOrigin;
+    }
 
-      return vec4(color, alpha);
+    vec3 sceneNormal(vec3 point) {
+      float dist = scene(point);
+      vec2 epsilon = vec2(0.001, 0);
+      vec3 normal = dist - vec3(
+        scene(point - epsilon.xyy),
+        scene(point - epsilon.yxy),
+        scene(point - epsilon.yyx)
+      );
+
+      return normalize(normal);
     }
 
     void main() {
       vec2 p = st();
-      // p /= 1.+ fract(beatTime)* beatScale;
-      p *= 1.2;             // global zoom out
-      p *= vec2(1, -1);     // flip Y so 0 is top left
-      p = p / 2. + 0.5;     // move origin to top left
-      p = p * board;        // scale up to game board size
+      vec3 color = vec3(0, 0, 0);
 
-      vec4 color = vec4(0, 0, 0, 0);
+      vec3 ro = vec3(0, 1, 0);
+      vec3 rd = normalize(vec3(p.x, p.y, 1));
 
-      // beat borders
-      for (float i = numBeats - 1.; i >= 0.; i--) {
-        float bt = 1. - fract(beatTime);
-        bt *= 7.;
-        bt = i - bt;
-        bt = abs(bt);
-        bt = normalized(bt);
-        bt = 1. - bt;
-        
-        if (i == 0.) bt = max(bt, phraseTime);
+      vec3 light = vec3(-6, 6, 0);
 
-        vec2 pEdge = scaleToBeat(p, i);
-        float edges = sdEdges(pEdge);
-        edges = step(abs(edges), 0.15);
-
-        vec3 edgeColor = vec3(fadeToBeat(i));
-        edgeColor = mix(edgeColor, shapes[0].color, bt);
-
-        color = mix(color, vec4(edgeColor, 1.), edges);
+      float d = rayMarch(ro, rd);
+      if (d < MAX_DIST) {
+        vec3 p = ro + d * rd;
+        vec3 n = sceneNormal(p);
+        float dif = dot(n, normalize(light - p));
+        color = vec3(dif);
       }
 
-      for (int i = numShapes - 1; i >= 0; i--) {
-        Shape s = shapes[i];
-        if (s.active) {
-          vec4 shape = colorShape(p, s);
-          color = mix(color, shape, shape.w);
-        }
-      }
+      color = pow(color, vec3(.4545)); // gamma correction
 
-      gl_FragColor = color;
+      gl_FragColor = vec4(color, 1);
     }
   `;
