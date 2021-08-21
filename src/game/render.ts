@@ -57,13 +57,14 @@ const u = state
     const shapes = takeLeft(8)(s.tetronimoes).map((shape): Shape => {
       const isHole = shape.type === 'hole';
       const color: Vec3 = isHole ? [1, 1, 1] : colors[shape.tetronimo]();
-      return {
+      const result = {
         blocks: transform(shape),
         color,
         beat: shape.beat - s.currentBeat,
         active: true,
         invert: isHole,
       };
+      return result;
     });
 
     return shapes;
@@ -108,16 +109,16 @@ export const draw = glsl`
     
     uniform Shape shapes[${numShapesToRender}];
 
-    float sdBlock(vec3 p, vec2 b) {
-      return sdBox(p - vec3(b - halfBoard + vec2(0.5), 0), vec3(0.5));
+    float sdBlock(vec3 p, vec3 b) {
+      return sdBox(p - (b - vec3(halfBoard + vec2(0.5), 0)), vec3(0.5));
     }
     
     float sdTetronimo(vec3 point, Shape s) {
       float d = INFINITY;
-      d = min(d, sdBlock(point, s.a));
-      d = min(d, sdBlock(point, s.b));
-      d = min(d, sdBlock(point, s.c));
-      d = min(d, sdBlock(point, s.d));
+      d = min(d, sdBlock(point, vec3(s.a, s.beat)));
+      d = min(d, sdBlock(point, vec3(s.b, s.beat)));
+      d = min(d, sdBlock(point, vec3(s.c, s.beat)));
+      d = min(d, sdBlock(point, vec3(s.d, s.beat)));
 
       // Expand the shape just slightly so that the edges between
       // the boxes will overlap nicely.
@@ -127,14 +128,22 @@ export const draw = glsl`
     }
 
     float sdHole(vec3 point, Shape s) {
-      float wall = sdBox(point, vec3(halfBoard, 0.5));
-      float tetronimo = sdTetronimo(vec3(point.xy, 0), shapes[0]);
+      float wall = sdBox(point - vec3(0, 0, s.beat), vec3(halfBoard, 0.5));
+      float tetronimo = sdTetronimo(point, s);
       return max(-tetronimo, wall);
     }
 
     float scene(vec3 point) {
-      // return sdTetronimo(point, shapes[0]);
-      return sdHole(point, shapes[0]);
+      float d = INFINITY;
+      for (int i = 0; i < ${numShapesToRender}; i++) {
+        Shape shape = shapes[i];
+        if (!shape.active) break;
+        float dS = shape.invert
+          ? sdHole(point, shape)
+          : sdTetronimo(point, shape);
+        d = min(d, dS);
+      }
+      return d;
     }
 
     float rayMarch(vec3 origin, vec3 direction) {
@@ -165,17 +174,14 @@ export const draw = glsl`
 
     void main() {
       vec2 p = st();
-      // p *= 1.2;             // global zoom out
       p *= vec2(1, -1);     // flip Y so 0 is top left
-      // p = p / 2. + 0.5;     // move origin to top left
-      // p = p * board;        // scale up to game board size
 
       vec3 color = vec3(0, 0, 0);
 
       vec3 ro = vec3(0, 0, -10);
       vec3 rd = normalize(vec3(p.x, p.y, 1));
 
-      vec3 light = vec3(0, 0, -1);
+      vec3 light = vec3(0, 0, -2);
 
       float d = rayMarch(ro, rd);
       if (d < MAX_DIST) {
