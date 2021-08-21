@@ -92,7 +92,6 @@ export const draw = glsl`
     #define MAX_STEPS 100
     #define MAX_DIST 100.
     #define SURFACE_DIST .001
-    #define BOX_SIZE vec3(0.5)
     #define board vec2(${width})
     #define halfBoard (board/2.)
 
@@ -109,22 +108,33 @@ export const draw = glsl`
     
     uniform Shape shapes[${numShapesToRender}];
 
-    float sdBlock(vec2 p, vec2 b) {
-      vec2 blockP = b + vec2(0.5);
-      return sdBox(p - blockP, vec2(0.5));
+    float sdBlock(vec3 p, vec2 b) {
+      return sdBox(p - vec3(b - halfBoard + vec2(0.5), 0), vec3(0.5));
     }
     
     float sdTetronimo(vec3 point, Shape s) {
       float d = INFINITY;
-      d = min(d, sdBox(point - vec3(s.a - halfBoard + vec2(0.5), 0), BOX_SIZE));
-      d = min(d, sdBox(point - vec3(s.b - halfBoard + vec2(0.5), 0), BOX_SIZE));
-      d = min(d, sdBox(point - vec3(s.c - halfBoard + vec2(0.5), 0), BOX_SIZE));
-      d = min(d, sdBox(point - vec3(s.d - halfBoard + vec2(0.5), 0), BOX_SIZE));
+      d = min(d, sdBlock(point, s.a));
+      d = min(d, sdBlock(point, s.b));
+      d = min(d, sdBlock(point, s.c));
+      d = min(d, sdBlock(point, s.d));
+
+      // Expand the shape just slightly so that the edges between
+      // the boxes will overlap nicely.
+      d -= 0.01;
+
       return d;
     }
 
+    float sdHole(vec3 point, Shape s) {
+      float wall = sdBox(point, vec3(halfBoard, 0.5));
+      float tetronimo = sdTetronimo(vec3(point.xy, 0), shapes[0]);
+      return max(-tetronimo, wall);
+    }
+
     float scene(vec3 point) {
-      return sdTetronimo(point, shapes[0]);
+      // return sdTetronimo(point, shapes[0]);
+      return sdHole(point, shapes[0]);
     }
 
     float rayMarch(vec3 origin, vec3 direction) {
