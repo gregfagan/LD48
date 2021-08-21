@@ -70,6 +70,8 @@ const u = state
   })
   .map(constantLength);
 
+stream.on(console.log, state);
+
 const points = ['a', 'b', 'c', 'd'];
 const uniforms = range(1, numShapesToRender).reduce((result, _, index) => {
   for (const key of Object.keys(u()[index])) {
@@ -89,7 +91,10 @@ export const draw = glsl`
 
     #define MAX_STEPS 100
     #define MAX_DIST 100.
-    #define SURFACE_DIST 0.01
+    #define SURFACE_DIST .001
+    #define BOX_SIZE vec3(0.5)
+    #define board vec2(${width})
+    #define halfBoard (board/2.)
 
     struct Shape {
       vec2 a;
@@ -101,13 +106,25 @@ export const draw = glsl`
       bool active;
       bool invert;
     };
+    
+    uniform Shape shapes[${numShapesToRender}];
 
-    // distance from a point to the scene
+    float sdBlock(vec2 p, vec2 b) {
+      vec2 blockP = b + vec2(0.5);
+      return sdBox(p - blockP, vec2(0.5));
+    }
+    
+    float sdTetronimo(vec3 point, Shape s) {
+      float d = INFINITY;
+      d = min(d, sdBox(point - vec3(s.a - halfBoard + vec2(0.5), 0), BOX_SIZE));
+      d = min(d, sdBox(point - vec3(s.b - halfBoard + vec2(0.5), 0), BOX_SIZE));
+      d = min(d, sdBox(point - vec3(s.c - halfBoard + vec2(0.5), 0), BOX_SIZE));
+      d = min(d, sdBox(point - vec3(s.d - halfBoard + vec2(0.5), 0), BOX_SIZE));
+      return d;
+    }
+
     float scene(vec3 point) {
-      vec3 spherePos = vec3(0, 1, 6);
-      float sphereDist = length(point - spherePos) - 1.;
-      float floorDist = point.y;
-      return min(sphereDist, floorDist);
+      return sdTetronimo(point, shapes[0]);
     }
 
     float rayMarch(vec3 origin, vec3 direction) {
@@ -138,12 +155,17 @@ export const draw = glsl`
 
     void main() {
       vec2 p = st();
+      // p *= 1.2;             // global zoom out
+      p *= vec2(1, -1);     // flip Y so 0 is top left
+      // p = p / 2. + 0.5;     // move origin to top left
+      // p = p * board;        // scale up to game board size
+
       vec3 color = vec3(0, 0, 0);
 
-      vec3 ro = vec3(0, 1, 0);
+      vec3 ro = vec3(0, 0, -10);
       vec3 rd = normalize(vec3(p.x, p.y, 1));
 
-      vec3 light = vec3(-6, 6, 0);
+      vec3 light = vec3(0, 0, -1);
 
       float d = rayMarch(ro, rd);
       if (d < MAX_DIST) {
