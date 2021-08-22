@@ -109,8 +109,9 @@ export const draw = glsl`
     
     uniform Shape shapes[${numShapesToRender}];
 
-    struct RayHit {
-      float d;
+    struct RayCast {
+      float d;  // distance to the scene (if hit)
+      float dS; // closest distance to the scene
       vec3 color;
     };
 
@@ -143,8 +144,8 @@ export const draw = glsl`
       return max(-tetronimo, wall);
     }
 
-    RayHit scene(vec3 point) {
-      RayHit rh = RayHit(INFINITY, vec3(0));
+    RayCast scene(vec3 point) {
+      RayCast rh = RayCast(INFINITY, INFINITY, vec3(0));
       for (int i = 0; i < ${numShapesToRender}; i++) {
         float dS = INFINITY;
         vec3 color = vec3(0);
@@ -152,28 +153,37 @@ export const draw = glsl`
         if (!shape.active) break;
         if (shape.invert) {
           dS = sdHole(point, shape);
-          // when rendering a hole, show an outline of the player's
-          // position above, to help them line it up.
-          float dPlayer = sdTetronimo(vec3(point.xy, 0), shapes[0]);
-          color = abs(dPlayer) < 0.1 ? shapes[0].color : vec3(1);
+          color = vec3(1);
         } else {
           dS = sdTetronimo(point, shape);
           color = shape.color;
         }
         if (dS < rh.d) {
-          rh = RayHit(dS, color);
+          rh = RayCast(dS, INFINITY, color);
         }
       }
       return rh;
     }
 
-    RayHit rayMarch(vec3 origin, vec3 direction) {
-      RayHit rh = RayHit(0., vec3(0));
+    RayCast rayMarch(vec3 origin, vec3 direction, bool playerOnly) {
+      RayCast rh = RayCast(0., INFINITY, vec3(0));
 
       for (int i = 0; i < MAX_STEPS; i++) {
         vec3 point = origin + rh.d * direction;
-        RayHit sceneHit = scene(point);
+        RayCast sceneHit;
+        if(playerOnly) {
+          sceneHit = RayCast(
+            sdTetronimo(point, shapes[0]),
+            INFINITY,
+            shapes[0].color
+          );
+        } else {
+          sceneHit = scene(point);
+        }
         rh.d += sceneHit.d;
+        if (sceneHit.d < rh.dS) {
+          rh.dS = sceneHit.d;
+        }
         if (sceneHit.d < SURFACE_DIST) {
           rh.color = sceneHit.color;
           break;
@@ -186,7 +196,7 @@ export const draw = glsl`
     }
 
     vec3 sceneNormal(vec3 point) {
-      RayHit rh = scene(point);
+      RayCast rh = scene(point);
       vec2 epsilon = vec2(0.001, 0);
       vec3 normal = rh.d - vec3(
         scene(point - epsilon.xyy).d,
@@ -206,15 +216,36 @@ export const draw = glsl`
       vec3 ro = vec3(0, 0, -10);
       vec3 rd = normalize(vec3(p.x, p.y, 1));
 
-      vec3 light = vec3(0, 0, -2);
+      vec3 light = vec3(0, 0, -5);
 
-      RayHit rh = rayMarch(ro, rd);
+      RayCast rh = rayMarch(ro, rd, false);
       if (rh.d < MAX_DIST) {
         vec3 p = ro + rh.d * rd;
         vec3 n = sceneNormal(p);
         float dif = dot(n, normalize(light - p));
         color = vec3(dif);
-        color *= rh.color;
+
+        if (rh.color == vec3(1)) {
+          // search for shadow
+          vec3 shadowRO = p + vec3(0);
+          RayCast shadow = rayMarch(
+            p,
+            vec3(0,0,-1),
+            true
+          );
+          float holeBeat = shapes[1].beat;
+          float penumbra = 0.1 * holeBeat;
+          if (shadow.dS < penumbra) {
+            color *= mix(
+              0.75 - 0.65 * (8. - holeBeat)/8.,
+              1.,
+              shadow.dS/penumbra
+            );
+          }
+        } else {
+          color *= rh.color;
+        }
+
       }
 
       color = pow(color, vec3(.4545)); // gamma correction
