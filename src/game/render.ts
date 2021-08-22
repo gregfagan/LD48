@@ -33,7 +33,7 @@ type Shape = {
   invert: boolean;
 };
 
-const numShapesToRender = 8;
+const numShapesToRender = 2;
 
 const emptyShape: Shape = {
   blocks: range(0, 3).map(() => vec2.zero()) as BlockPositions,
@@ -70,8 +70,6 @@ const u = state
     return shapes;
   })
   .map(constantLength);
-
-stream.on(console.log, state);
 
 const points = ['a', 'b', 'c', 'd'];
 const uniforms = range(1, numShapesToRender).reduce((result, _, index) => {
@@ -162,6 +160,31 @@ export const draw = glsl`
           rh = RayCast(dS, INFINITY, color);
         }
       }
+
+      float distToWall = abs(point.y - halfBoard.y);
+      if (rh.d > distToWall) {
+        rh.d = distToWall;
+        rh.color = vec3(1);
+      }
+
+      distToWall = point.y + halfBoard.y;
+      if (rh.d > distToWall) {
+        rh.d = distToWall;
+        rh.color = vec3(1);
+      }
+
+      distToWall = point.x + halfBoard.x;
+      if (rh.d > distToWall) {
+        rh.d = distToWall;
+        rh.color = vec3(1);
+      }
+
+      distToWall = abs(point.x - halfBoard.x);
+      if (rh.d > distToWall) {
+        rh.d = distToWall;
+        rh.color = vec3(1);
+      }
+
       return rh;
     }
 
@@ -216,7 +239,7 @@ export const draw = glsl`
       vec3 ro = vec3(0, 0, -10);
       vec3 rd = normalize(vec3(p.x, p.y, 1));
 
-      vec3 light = vec3(0, 0, -5);
+      vec3 light = vec3(0, 0, -7);
 
       RayCast rh = rayMarch(ro, rd, false);
       if (rh.d < MAX_DIST) {
