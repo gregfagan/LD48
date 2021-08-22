@@ -109,6 +109,11 @@ export const draw = glsl`
     
     uniform Shape shapes[${numShapesToRender}];
 
+    struct RayHit {
+      float d;
+      vec3 color;
+    };
+
     float sdBlock(vec3 p, vec3 b) {
       return sdBox(p - (b - vec3(halfBoard + vec2(0.5), 0)), vec3(0.5));
     }
@@ -133,40 +138,53 @@ export const draw = glsl`
       return max(-tetronimo, wall);
     }
 
-    float scene(vec3 point) {
-      float d = INFINITY;
+    RayHit scene(vec3 point) {
+      RayHit rh = RayHit(INFINITY, vec3(0));
       for (int i = 0; i < ${numShapesToRender}; i++) {
+        float dS = INFINITY;
+        vec3 color = vec3(0);
         Shape shape = shapes[i];
         if (!shape.active) break;
-        float dS = shape.invert
-          ? sdHole(point, shape)
-          : sdTetronimo(point, shape);
-        d = min(d, dS);
+        if (shape.invert) {
+          dS = sdHole(point, shape);
+          float dPlayer = sdTetronimo(vec3(point.xy, 0), shapes[0]);
+          color = abs(dPlayer) < 0.1 ? shapes[0].color : vec3(1);
+        } else {
+          dS = sdTetronimo(point, shape);
+          color = shape.color;
+        }
+        if (dS < rh.d) {
+          rh = RayHit(dS, color);
+        }
       }
-      return d;
+      return rh;
     }
 
-    float rayMarch(vec3 origin, vec3 direction) {
-      float distanceFromOrigin = 0.;
+    RayHit rayMarch(vec3 origin, vec3 direction) {
+      RayHit rh = RayHit(0., vec3(0));
 
       for (int i = 0; i < MAX_STEPS; i++) {
-        vec3 point = origin + distanceFromOrigin * direction;
-        float distanceToScene = scene(point);
-        distanceFromOrigin += distanceToScene;
-        if (distanceToScene < SURFACE_DIST || distanceFromOrigin > MAX_DIST)
+        vec3 point = origin + rh.d * direction;
+        RayHit sceneHit = scene(point);
+        rh.d += sceneHit.d;
+        if (sceneHit.d < SURFACE_DIST) {
+          rh.color = sceneHit.color;
+          break;
+        }
+        if (rh.d > MAX_DIST)
           break;
       }
 
-      return distanceFromOrigin;
+      return rh;
     }
 
     vec3 sceneNormal(vec3 point) {
-      float dist = scene(point);
+      RayHit rh = scene(point);
       vec2 epsilon = vec2(0.001, 0);
-      vec3 normal = dist - vec3(
-        scene(point - epsilon.xyy),
-        scene(point - epsilon.yxy),
-        scene(point - epsilon.yyx)
+      vec3 normal = rh.d - vec3(
+        scene(point - epsilon.xyy).d,
+        scene(point - epsilon.yxy).d,
+        scene(point - epsilon.yyx).d
       );
 
       return normalize(normal);
@@ -183,12 +201,13 @@ export const draw = glsl`
 
       vec3 light = vec3(0, 0, -2);
 
-      float d = rayMarch(ro, rd);
-      if (d < MAX_DIST) {
-        vec3 p = ro + d * rd;
+      RayHit rh = rayMarch(ro, rd);
+      if (rh.d < MAX_DIST) {
+        vec3 p = ro + rh.d * rd;
         vec3 n = sceneNormal(p);
         float dif = dot(n, normalize(light - p));
         color = vec3(dif);
+        color *= rh.color;
       }
 
       color = pow(color, vec3(.4545)); // gamma correction
