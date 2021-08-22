@@ -185,6 +185,11 @@ export const draw = glsl`
         rh.color = vec3(1);
       }
 
+      float distBehindHole = point.z - 0.5 - shapes[1].beat;
+      if (distBehindHole > 0.) {
+        rh.color *= mix(1., 0.0, distBehindHole / 1.);
+      }
+
       return rh;
     }
 
@@ -248,7 +253,7 @@ export const draw = glsl`
         float dif = dot(n, normalize(light - p));
         color = vec3(dif);
 
-        if (rh.color == vec3(1)) {
+        if (rh.color.x == rh.color.y) {
           // search for shadow
           vec3 shadowRO = p + vec3(0);
           RayCast shadow = rayMarch(
@@ -265,9 +270,8 @@ export const draw = glsl`
               shadow.dS/penumbra
             );
           }
-        } else {
+        } 
           color *= rh.color;
-        }
 
       }
 
