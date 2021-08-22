@@ -119,6 +119,8 @@ export const draw = glsl`
     }
     
     float sdTetronimo(vec3 point, Shape s) {
+      // offset point to line up with camera
+      point -= vec3(vec2(1), 0);
       float d = INFINITY;
       d = min(d, sdBlock(point, vec3(s.a, s.beat)));
       d = min(d, sdBlock(point, vec3(s.b, s.beat)));
@@ -133,7 +135,10 @@ export const draw = glsl`
     }
 
     float sdHole(vec3 point, Shape s) {
-      float wall = sdBox(point - vec3(0, 0, s.beat), vec3(halfBoard, 0.5));
+      float wall = sdBox(
+        point - vec3(0, 0, s.beat),
+        vec3(halfBoard, 0.5)
+      );
       float tetronimo = sdTetronimo(point, s);
       return max(-tetronimo, wall);
     }
@@ -147,6 +152,8 @@ export const draw = glsl`
         if (!shape.active) break;
         if (shape.invert) {
           dS = sdHole(point, shape);
+          // when rendering a hole, show an outline of the player's
+          // position above, to help them line it up.
           float dPlayer = sdTetronimo(vec3(point.xy, 0), shapes[0]);
           color = abs(dPlayer) < 0.1 ? shapes[0].color : vec3(1);
         } else {
