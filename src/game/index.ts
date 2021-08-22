@@ -92,7 +92,7 @@ const repeating = stream.combine(
   [noRepeatKeydowns, allKeysOff]
 );
 
-const repeatTime = (4 * 1000) / 60;
+const repeatTime = (7 * 1000) / 60;
 let repeatTimeCount = 0;
 let lastTime = performance.now();
 const repeatTick = stream.of();
