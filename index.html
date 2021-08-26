@@ -19,6 +19,13 @@
         -webkit-touch-callout: none;
         -webkit-user-drag: none;
       }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       #layout {
         position: absolute;
         z-index: 1;
@@ -38,6 +45,9 @@
         font-size: 0.75em;
         margin-top: 1em;
       }
+      canvas {
+        cursor: none;
+      }
     </style>
   </head>
   <body>
@@ -46,6 +56,7 @@
       <div id="about" class="ui once">by the fagan brothers</div>
       <div id="instructions" class="ui once"></div>
     </div>
+    <canvas id="game"></canvas>
     <script type="module" src="/src/index.ts"></script>
   </body>
 </html>

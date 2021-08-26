@@ -6,7 +6,9 @@ import { draw } from './game';
 import { keypress } from './lib/stream/dom';
 import { resize } from './game/ui';
 
-const regl = REGL();
+const canvas = document.getElementById('game') as HTMLCanvasElement;
+const regl = REGL({ canvas });
+
 const stats = new Stats();
 stats.showPanel(0);
 document.body.appendChild(stats.dom);
@@ -32,4 +34,4 @@ stream.on(() => {
 const ro = new ResizeObserver(([entry]) => {
   resize(entry.contentRect);
 });
-ro.observe(regl._gl.canvas);
+ro.observe(document.body);
